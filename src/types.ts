@@ -35,6 +35,17 @@ export interface RoundPlayer {
   teeId: string
 }
 
+export type GameMode =
+  | 'stableford'
+  | 'strokeplay_gross'
+  | 'strokeplay_net'
+  | 'matchplay_gross'
+  | 'matchplay_net'
+
+export type MatchHoleConcession =
+  | { type: 'won'; playerId: string }
+  | { type: 'halved' }
+
 export interface Round {
   id: string
   courseId: string
@@ -43,4 +54,10 @@ export interface Round {
   scores: Record<string, Record<number, number>> // playerId -> holeNumber -> Bruttoschläge
   status: 'in_progress' | 'finished'
   currentHole: number
+  gameMode: GameMode
+  matchConcessions?: Record<number, MatchHoleConcession> // nur bei matchplay_*: holeNumber -> manuell festgelegtes Ergebnis
+}
+
+export function isMatchplay(mode: GameMode): boolean {
+  return mode === 'matchplay_gross' || mode === 'matchplay_net'
 }

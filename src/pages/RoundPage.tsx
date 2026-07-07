@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import type { Round } from '../types'
+import { isMatchplay } from '../types'
 import { getActiveRoundId, getCourses, getPlayers, getRounds, setActiveRoundId, upsertRound } from '../storage'
 import RoundSetupPage from './RoundSetupPage'
 import RoundPlayPage from './RoundPlayPage'
-import { totalPoints, computeHoleResults } from '../stableford'
+import ResultsTable from '../components/ResultsTable'
+import MatchplayStatus from '../components/MatchplayStatus'
 
 export default function RoundPage() {
   const courses = getCourses()
@@ -42,30 +44,14 @@ export default function RoundPage() {
   }
 
   if (finished && course) {
-    const results = finished.players.map((rp) => {
-      const player = players.find((p) => p.id === rp.playerId)!
-      const tee = course.tees.find((t) => t.id === rp.teeId)!
-      const holeResults = computeHoleResults(course, tee, player.handicap, finished.scores[rp.playerId] ?? {})
-      return { player, total: totalPoints(holeResults) }
-    }).sort((a, b) => b.total - a.total)
-
     return (
       <div className="page">
         <h2>Ergebnis: {course.name}</h2>
-        <table>
-          <thead>
-            <tr><th>Platz</th><th>Spieler</th><th>Punkte</th></tr>
-          </thead>
-          <tbody>
-            {results.map((r, i) => (
-              <tr key={r.player.id}>
-                <td>{i + 1}</td>
-                <td>{r.player.firstName} {r.player.lastName}</td>
-                <td className="points">{r.total}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {isMatchplay(finished.gameMode) ? (
+          <MatchplayStatus course={course} round={finished} players={players} showThru={false} />
+        ) : (
+          <ResultsTable course={course} round={finished} players={players} showThru={false} />
+        )}
         <button className="primary" onClick={() => setFinished(null)}>Neue Runde starten</button>
       </div>
     )

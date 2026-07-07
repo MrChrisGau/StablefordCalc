@@ -66,7 +66,7 @@ export function deletePlayer(id: string): void {
 }
 
 export function getRounds(): Round[] {
-  return load<Round[]>(KEYS.rounds, [])
+  return load<Round[]>(KEYS.rounds, []).map((r) => ({ ...r, gameMode: r.gameMode ?? 'stableford' }))
 }
 
 export function saveRounds(rounds: Round[]): void {

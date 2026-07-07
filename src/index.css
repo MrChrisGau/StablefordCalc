@@ -34,6 +34,7 @@ body {
 
 .app-header {
   padding: 0.75rem 1rem;
+  padding-top: max(0.75rem, env(safe-area-inset-top));
   border-bottom: 1px solid var(--border);
   text-align: center;
 }
@@ -395,10 +396,65 @@ td.points {
   font-weight: 700;
 }
 
+.match-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.match-player {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-player.leading {
+  color: var(--accent);
+}
+
+.match-score {
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  background: var(--surface-2);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.match-thru {
+  flex-basis: 100%;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.concede-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.concede-row button {
+  flex: 1;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.3rem;
+}
+
+.concede-row button.active {
+  background: var(--accent);
+  color: #052b0f;
+  font-weight: 700;
+}
+
 .tabbar {
   display: flex;
   border-top: 1px solid var(--border);
   background: var(--surface);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.6rem);
 }
 
 .tabbar button {

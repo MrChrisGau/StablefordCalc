@@ -1,6 +1,15 @@
 import { useMemo, useState } from 'react'
-import type { Course, Player, Round, RoundPlayer } from '../types'
+import type { Course, GameMode, Player, Round, RoundPlayer } from '../types'
+import { isMatchplay } from '../types'
 import { genId } from '../storage'
+
+const GAME_MODE_LABELS: Record<GameMode, string> = {
+  stableford: 'Stableford',
+  strokeplay_gross: 'Brutto-Zählspiel',
+  strokeplay_net: 'Netto-Zählspiel',
+  matchplay_gross: 'Brutto-Matchplay',
+  matchplay_net: 'Netto-Matchplay',
+}
 
 interface Props {
   courses: Course[]
@@ -11,6 +20,7 @@ interface Props {
 export default function RoundSetupPage({ courses, players, onStart }: Props) {
   const [courseId, setCourseId] = useState(courses[0]?.id ?? '')
   const [selection, setSelection] = useState<RoundPlayer[]>([])
+  const [gameMode, setGameMode] = useState<GameMode>('stableford')
   const [error, setError] = useState('')
 
   const course = useMemo(() => courses.find((c) => c.id === courseId), [courses, courseId])
@@ -24,15 +34,19 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
   function togglePlayer(player: Player) {
     setError('')
     const exists = selection.some((s) => s.playerId === player.id)
-    if (exists) {
-      setSelection(selection.filter((s) => s.playerId !== player.id))
-      return
-    }
-    if (selection.length >= 4) {
+    const next = exists
+      ? selection.filter((s) => s.playerId !== player.id)
+      : selection.length < 4
+        ? [...selection, { playerId: player.id, teeId: defaultTeeFor(player) }]
+        : null
+    if (next === null) {
       setError('Es können maximal 4 Spieler an einer Runde teilnehmen.')
       return
     }
-    setSelection([...selection, { playerId: player.id, teeId: defaultTeeFor(player) }])
+    setSelection(next)
+    if (next.length !== 2 && isMatchplay(gameMode)) {
+      setGameMode('stableford')
+    }
   }
 
   function setTee(playerId: string, teeId: string) {
@@ -52,6 +66,10 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
       setError('Bitte für jeden Spieler einen Abschlag wählen.')
       return
     }
+    if (isMatchplay(gameMode) && selection.length !== 2) {
+      setError('Matchplay erfordert genau 2 Spieler.')
+      return
+    }
     const round: Round = {
       id: genId(),
       courseId: course.id,
@@ -60,6 +78,8 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
       scores: Object.fromEntries(selection.map((s) => [s.playerId, {}])),
       status: 'in_progress',
       currentHole: 1,
+      gameMode,
+      matchConcessions: isMatchplay(gameMode) ? {} : undefined,
     }
     onStart(round)
   }
@@ -107,6 +127,20 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
           )
         })}
       </ul>
+
+      <label className="field">
+        <span>Spielart</span>
+        <select value={gameMode} onChange={(e) => setGameMode(e.target.value as GameMode)}>
+          {(Object.keys(GAME_MODE_LABELS) as GameMode[]).map((mode) => (
+            <option key={mode} value={mode} disabled={isMatchplay(mode) && selection.length !== 2}>
+              {GAME_MODE_LABELS[mode]}
+            </option>
+          ))}
+        </select>
+        {selection.length !== 2 && (
+          <span className="muted">Matchplay ist nur bei genau 2 Spielern wählbar.</span>
+        )}
+      </label>
 
       {error && <p className="error">{error}</p>}
 
