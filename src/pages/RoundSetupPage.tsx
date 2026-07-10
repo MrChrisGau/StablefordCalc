@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import type { Course, GameMode, Player, Round, RoundPlayer } from '../types'
-import { isMatchplay } from '../types'
+import type { Course, GameMode, Player, Round, RoundPlayer, RoundTeam } from '../types'
+import { isMatchplay, isSinglesMatchplay, isTeamMatchplay } from '../types'
 import { genId } from '../storage'
 
 const GAME_MODE_LABELS: Record<GameMode, string> = {
@@ -9,6 +9,14 @@ const GAME_MODE_LABELS: Record<GameMode, string> = {
   strokeplay_net: 'Netto-Zählspiel',
   matchplay_gross: 'Brutto-Matchplay',
   matchplay_net: 'Netto-Matchplay',
+  matchplay_fourball: 'Fourball Bestball',
+  matchplay_foursomes: 'Klassischer Vierer',
+}
+
+function requiredPlayerCount(mode: GameMode): number | null {
+  if (isSinglesMatchplay(mode)) return 2
+  if (isTeamMatchplay(mode)) return 4
+  return null
 }
 
 interface Props {
@@ -21,6 +29,7 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
   const [courseId, setCourseId] = useState(courses[0]?.id ?? '')
   const [selection, setSelection] = useState<RoundPlayer[]>([])
   const [gameMode, setGameMode] = useState<GameMode>('stableford')
+  const [teamOverride, setTeamOverride] = useState<Record<string, 0 | 1>>({})
   const [error, setError] = useState('')
 
   const course = useMemo(() => courses.find((c) => c.id === courseId), [courses, courseId])
@@ -29,6 +38,14 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
     if (!course) return ''
     const match = course.tees.find((t) => t.gender === player.gender)
     return (match ?? course.tees[0])?.id ?? ''
+  }
+
+  function teamIndexOf(playerId: string, idx: number): 0 | 1 {
+    return teamOverride[playerId] ?? (idx < 2 ? 0 : 1)
+  }
+
+  function toggleTeam(playerId: string, idx: number) {
+    setTeamOverride({ ...teamOverride, [playerId]: teamIndexOf(playerId, idx) === 0 ? 1 : 0 })
   }
 
   function togglePlayer(player: Player) {
@@ -44,7 +61,8 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
       return
     }
     setSelection(next)
-    if (next.length !== 2 && isMatchplay(gameMode)) {
+    const required = requiredPlayerCount(gameMode)
+    if (required !== null && next.length !== required) {
       setGameMode('stableford')
     }
   }
@@ -66,10 +84,23 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
       setError('Bitte für jeden Spieler einen Abschlag wählen.')
       return
     }
-    if (isMatchplay(gameMode) && selection.length !== 2) {
-      setError('Matchplay erfordert genau 2 Spieler.')
+    const required = requiredPlayerCount(gameMode)
+    if (required !== null && selection.length !== required) {
+      setError(`${GAME_MODE_LABELS[gameMode]} erfordert genau ${required} Spieler.`)
       return
     }
+
+    let teams: [RoundTeam, RoundTeam] | undefined
+    if (isTeamMatchplay(gameMode)) {
+      const team0 = selection.filter((s, idx) => teamIndexOf(s.playerId, idx) === 0).map((s) => s.playerId)
+      const team1 = selection.filter((s, idx) => teamIndexOf(s.playerId, idx) === 1).map((s) => s.playerId)
+      if (team0.length !== 2 || team1.length !== 2) {
+        setError('Bitte genau 2 Spieler pro Team zuordnen.')
+        return
+      }
+      teams = [{ playerIds: team0 as [string, string] }, { playerIds: team1 as [string, string] }]
+    }
+
     const round: Round = {
       id: genId(),
       courseId: course.id,
@@ -80,6 +111,8 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
       currentHole: 1,
       gameMode,
       matchConcessions: isMatchplay(gameMode) ? {} : undefined,
+      teams,
+      teamScores: gameMode === 'matchplay_foursomes' ? { 0: {}, 1: {} } : undefined,
     }
     onStart(round)
   }
@@ -131,16 +164,37 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
       <label className="field">
         <span>Spielart</span>
         <select value={gameMode} onChange={(e) => setGameMode(e.target.value as GameMode)}>
-          {(Object.keys(GAME_MODE_LABELS) as GameMode[]).map((mode) => (
-            <option key={mode} value={mode} disabled={isMatchplay(mode) && selection.length !== 2}>
-              {GAME_MODE_LABELS[mode]}
-            </option>
-          ))}
+          {(Object.keys(GAME_MODE_LABELS) as GameMode[]).map((mode) => {
+            const required = requiredPlayerCount(mode)
+            return (
+              <option key={mode} value={mode} disabled={required !== null && selection.length !== required}>
+                {GAME_MODE_LABELS[mode]}
+              </option>
+            )
+          })}
         </select>
-        {selection.length !== 2 && (
-          <span className="muted">Matchplay ist nur bei genau 2 Spielern wählbar.</span>
-        )}
+        <span className="muted">Einzel-Matchplay benötigt genau 2, Team-Matchplay (Vierer/Fourball) genau 4 Spieler.</span>
       </label>
+
+      {isTeamMatchplay(gameMode) && selection.length === 4 && (
+        <label className="field">
+          <span>Teams</span>
+          <div className="stack">
+            {selection.map((s, idx) => {
+              const player = players.find((p) => p.id === s.playerId)!
+              const team = teamIndexOf(s.playerId, idx)
+              return (
+                <div className="team-assign-row" key={s.playerId}>
+                  <span className="entry-name">{player.firstName} {player.lastName}</span>
+                  <button type="button" className="secondary" onClick={() => toggleTeam(s.playerId, idx)}>
+                    Team {team + 1}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </label>
+      )}
 
       {error && <p className="error">{error}</p>}
 

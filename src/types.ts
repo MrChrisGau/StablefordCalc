@@ -41,10 +41,16 @@ export type GameMode =
   | 'strokeplay_net'
   | 'matchplay_gross'
   | 'matchplay_net'
+  | 'matchplay_fourball'
+  | 'matchplay_foursomes'
 
 export type MatchHoleConcession =
-  | { type: 'won'; playerId: string }
+  | { type: 'won'; sideId: string } // playerId (Einzel) oder 'team-0'/'team-1' (Team)
   | { type: 'halved' }
+
+export interface RoundTeam {
+  playerIds: [string, string]
+}
 
 export interface Round {
   id: string
@@ -56,8 +62,18 @@ export interface Round {
   currentHole: number
   gameMode: GameMode
   matchConcessions?: Record<number, MatchHoleConcession> // nur bei matchplay_*: holeNumber -> manuell festgelegtes Ergebnis
+  teams?: [RoundTeam, RoundTeam] // nur bei matchplay_fourball/foursomes
+  teamScores?: Record<number, Record<number, number>> // nur bei matchplay_foursomes: teamIndex -> holeNumber -> Schläge
+}
+
+export function isSinglesMatchplay(mode: GameMode): boolean {
+  return mode === 'matchplay_gross' || mode === 'matchplay_net'
+}
+
+export function isTeamMatchplay(mode: GameMode): boolean {
+  return mode === 'matchplay_fourball' || mode === 'matchplay_foursomes'
 }
 
 export function isMatchplay(mode: GameMode): boolean {
-  return mode === 'matchplay_gross' || mode === 'matchplay_net'
+  return isSinglesMatchplay(mode) || isTeamMatchplay(mode)
 }

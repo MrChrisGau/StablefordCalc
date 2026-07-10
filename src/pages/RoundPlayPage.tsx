@@ -24,6 +24,9 @@ export default function RoundPlayPage({ round, course, players, onUpdate, onFini
 
   function isHoleDone(holeNumber: number): boolean {
     if (matchplay && round.matchConcessions?.[holeNumber]) return true
+    if (round.gameMode === 'matchplay_foursomes') {
+      return round.teamScores?.[0]?.[holeNumber] !== undefined && round.teamScores?.[1]?.[holeNumber] !== undefined
+    }
     return round.players.every((rp) => round.scores[rp.playerId]?.[holeNumber] !== undefined)
   }
 

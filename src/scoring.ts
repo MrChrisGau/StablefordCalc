@@ -1,4 +1,4 @@
-import type { Course, HoleInfo, MatchHoleConcession, Tee } from './types'
+import type { Course, GameMode, HoleInfo, MatchHoleConcession, Player, Round, Tee } from './types'
 import { courseHandicap, strokesForHole } from './stableford'
 
 export type StrokeplayVariant = 'gross' | 'net'
@@ -45,52 +45,49 @@ export function formatDiff(n: number | undefined): string {
 
 export interface MatchHoleOutcome {
   hole: HoleInfo
-  winnerPlayerId: string | 'halved' | undefined
+  winnerSideId: string | 'halved' | undefined
 }
 
-interface MatchPlayerInput {
-  playerId: string
-  tee: Tee
-  handicapIndex: number
-  scores: Record<number, number>
+export interface MatchSideInput {
+  sideId: string
+  label: string
+  courseHandicap: number
+  grossForHole: (holeNumber: number) => number | undefined
 }
 
 export function computeMatchHoleOutcomes(
   course: Course,
-  playerA: MatchPlayerInput,
-  playerB: MatchPlayerInput,
+  sideA: MatchSideInput,
+  sideB: MatchSideInput,
   concessions: Record<number, MatchHoleConcession> | undefined,
   variant: StrokeplayVariant,
 ): MatchHoleOutcome[] {
-  const hcpA = courseHandicap(playerA.handicapIndex, playerA.tee, course)
-  const hcpB = courseHandicap(playerB.handicapIndex, playerB.tee, course)
-
   return course.holes.map((hole) => {
     const conceded = concessions?.[hole.number]
     if (conceded) {
       return {
         hole,
-        winnerPlayerId: conceded.type === 'halved' ? 'halved' : conceded.playerId,
+        winnerSideId: conceded.type === 'halved' ? 'halved' : conceded.sideId,
       }
     }
 
-    const grossA = playerA.scores[hole.number]
-    const grossB = playerB.scores[hole.number]
+    const grossA = sideA.grossForHole(hole.number)
+    const grossB = sideB.grossForHole(hole.number)
     if (grossA === undefined || grossB === undefined) {
-      return { hole, winnerPlayerId: undefined }
+      return { hole, winnerSideId: undefined }
     }
 
-    const netA = variant === 'net' ? grossA - strokesForHole(hcpA, hole, course.holeCount) : grossA
-    const netB = variant === 'net' ? grossB - strokesForHole(hcpB, hole, course.holeCount) : grossB
+    const netA = variant === 'net' ? grossA - strokesForHole(sideA.courseHandicap, hole, course.holeCount) : grossA
+    const netB = variant === 'net' ? grossB - strokesForHole(sideB.courseHandicap, hole, course.holeCount) : grossB
 
-    if (netA === netB) return { hole, winnerPlayerId: 'halved' }
-    return { hole, winnerPlayerId: netA < netB ? playerA.playerId : playerB.playerId }
+    if (netA === netB) return { hole, winnerSideId: 'halved' }
+    return { hole, winnerSideId: netA < netB ? sideA.sideId : sideB.sideId }
   })
 }
 
 export interface MatchStatus {
-  diff: number // Anzahl Löcher Vorsprung des führenden Spielers, 0 = AS
-  leaderId: string | undefined
+  diff: number // Anzahl Löcher Vorsprung der führenden Seite, 0 = AS
+  leaderSideId: string | undefined
   holesDecided: number
 }
 
@@ -98,21 +95,69 @@ export function matchStatus(outcomes: MatchHoleOutcome[]): MatchStatus {
   const tally: Record<string, number> = {}
   let holesDecided = 0
   for (const o of outcomes) {
-    if (o.winnerPlayerId === undefined) continue
+    if (o.winnerSideId === undefined) continue
     holesDecided++
-    if (o.winnerPlayerId === 'halved') continue
-    tally[o.winnerPlayerId] = (tally[o.winnerPlayerId] ?? 0) + 1
+    if (o.winnerSideId === 'halved') continue
+    tally[o.winnerSideId] = (tally[o.winnerSideId] ?? 0) + 1
   }
   const entries = Object.entries(tally)
-  if (entries.length === 0) return { diff: 0, leaderId: undefined, holesDecided }
-  const [leaderId, leaderWins] = entries.reduce((a, b) => (b[1] > a[1] ? b : a))
-  const otherWins = entries.filter(([id]) => id !== leaderId).reduce((sum, [, w]) => sum + w, 0)
+  if (entries.length === 0) return { diff: 0, leaderSideId: undefined, holesDecided }
+  const [leaderSideId, leaderWins] = entries.reduce((a, b) => (b[1] > a[1] ? b : a))
+  const otherWins = entries.filter(([id]) => id !== leaderSideId).reduce((sum, [, w]) => sum + w, 0)
   const diff = leaderWins - otherWins
-  if (diff === 0) return { diff: 0, leaderId: undefined, holesDecided }
-  return { diff, leaderId, holesDecided }
+  if (diff === 0) return { diff: 0, leaderSideId: undefined, holesDecided }
+  return { diff, leaderSideId, holesDecided }
 }
 
-export function formatMatchStatus(status: MatchStatus, leaderName: string | undefined): string {
-  if (status.diff === 0 || !leaderName) return 'AS'
-  return `${leaderName} ${status.diff}Up`
+export function formatMatchStatus(status: MatchStatus, leaderLabel: string | undefined): string {
+  if (status.diff === 0 || !leaderLabel) return 'AS'
+  return `${leaderLabel} ${status.diff}Up`
+}
+
+export function matchVariant(gameMode: GameMode): StrokeplayVariant {
+  return gameMode === 'matchplay_gross' ? 'gross' : 'net'
+}
+
+function reduceToThreeQuarters(ch: number): number {
+  return Math.round(ch * 0.75)
+}
+
+export function buildMatchSides(course: Course, round: Round, players: Player[]): [MatchSideInput, MatchSideInput] | null {
+  if (round.gameMode === 'matchplay_fourball' || round.gameMode === 'matchplay_foursomes') {
+    if (!round.teams) return null
+    const isFourball = round.gameMode === 'matchplay_fourball'
+
+    return round.teams.map((team, teamIndex): MatchSideInput => {
+      const teamPlayers = team.playerIds.map((id) => players.find((p) => p.id === id)!)
+      const teamRoundPlayers = team.playerIds.map((id) => round.players.find((rp) => rp.playerId === id)!)
+      const teamTees = teamRoundPlayers.map((rp) => course.tees.find((t) => t.id === rp.teeId)!)
+
+      const individualHcps = teamPlayers.map((p, i) => courseHandicap(p.handicap, teamTees[i], course))
+      const adjustedHcps = isFourball ? individualHcps.map(reduceToThreeQuarters) : individualHcps
+      const sideHandicap = Math.round((adjustedHcps[0] + adjustedHcps[1]) / 2)
+
+      const label = `${teamPlayers[0].firstName} & ${teamPlayers[1].firstName}`
+
+      const grossForHole = isFourball
+        ? (holeNumber: number) => {
+            const [gA, gB] = team.playerIds.map((id) => round.scores[id]?.[holeNumber])
+            if (gA === undefined || gB === undefined) return undefined
+            return Math.min(gA, gB)
+          }
+        : (holeNumber: number) => round.teamScores?.[teamIndex]?.[holeNumber]
+
+      return { sideId: `team-${teamIndex}`, label, courseHandicap: sideHandicap, grossForHole }
+    }) as [MatchSideInput, MatchSideInput]
+  }
+
+  return round.players.slice(0, 2).map((rp): MatchSideInput => {
+    const player = players.find((p) => p.id === rp.playerId)!
+    const tee = course.tees.find((t) => t.id === rp.teeId)!
+    return {
+      sideId: player.id,
+      label: `${player.firstName} ${player.lastName}`,
+      courseHandicap: courseHandicap(player.handicap, tee, course),
+      grossForHole: (holeNumber: number) => round.scores[player.id]?.[holeNumber],
+    }
+  }) as [MatchSideInput, MatchSideInput]
 }

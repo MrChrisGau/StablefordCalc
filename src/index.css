@@ -417,6 +417,12 @@ td.points {
   color: var(--accent);
 }
 
+.match-hcp {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .match-score {
   font-weight: 700;
   padding: 0.2rem 0.6rem;
@@ -430,6 +436,21 @@ td.points {
   text-align: center;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.team-assign-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.5rem 0.8rem;
+  gap: 0.5rem;
+}
+
+.team-assign-row button {
+  flex: 0 0 auto;
 }
 
 .concede-row {

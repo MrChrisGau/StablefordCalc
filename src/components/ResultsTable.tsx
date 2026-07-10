@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { Course, Player, Round } from '../types'
-import { computeHoleResults, holesPlayed, totalPoints } from '../stableford'
+import { computeHoleResults, courseHandicap, holesPlayed, totalPoints } from '../stableford'
 import { computeStrokeplayResults, formatDiff, totalDiffToPar } from '../scoring'
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
 interface Row {
   playerId: string
   name: string
+  handicap: number
   thru: number
   value: number | undefined
   display: string
@@ -28,6 +29,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
       const tee = course.tees.find((t) => t.id === rp.teeId)!
       const scores = round.scores[rp.playerId] ?? {}
       const name = `${player.firstName} ${player.lastName}`
+      const handicap = courseHandicap(player.handicap, tee, course)
 
       if (isStrokeplay) {
         const results = computeStrokeplayResults(course, tee, player.handicap, scores, isNet ? 'net' : 'gross')
@@ -35,6 +37,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
         return {
           playerId: player.id,
           name,
+          handicap,
           thru: results.filter((r) => r.gross !== undefined).length,
           value,
           display: formatDiff(value),
@@ -46,6 +49,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
       return {
         playerId: player.id,
         name,
+        handicap,
         thru: holesPlayed(results),
         value,
         display: String(value),
@@ -68,6 +72,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
         <tr>
           <th>Platz</th>
           <th>Spieler</th>
+          <th>Vorgabe</th>
           {showThru && <th>Thru</th>}
           <th>{isStrokeplay ? '+/-' : 'Punkte'}</th>
         </tr>
@@ -77,6 +82,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
           <tr key={row.playerId}>
             <td>{i + 1}</td>
             <td>{row.name}</td>
+            <td>{row.handicap}</td>
             {showThru && <td>{row.thru}/{course.holeCount}</td>}
             <td className="points">{row.display}</td>
           </tr>

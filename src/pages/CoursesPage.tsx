@@ -163,10 +163,10 @@ export default function CoursesPage() {
               </label>
               <label className="tee-detail-field">
                 <span>Slope</span>
-                <input
-                  type="number"
+                <DecimalInput
+                  decimals={0}
                   value={tee.slope}
-                  onChange={(e) => updateTee(tee.id, 'slope', Number(e.target.value))}
+                  onChange={(value) => updateTee(tee.id, 'slope', value)}
                 />
               </label>
             </div>
@@ -184,10 +184,10 @@ export default function CoursesPage() {
           {editing.holes.map((hole) => (
             <div className="holes-row" key={hole.number}>
               <span>{hole.number}</span>
-              <input
-                type="number"
+              <DecimalInput
+                decimals={0}
                 value={hole.par}
-                onChange={(e) => updateHolePar(hole.number, Number(e.target.value))}
+                onChange={(value) => updateHolePar(hole.number, value)}
               />
               <select
                 value={hole.strokeIndex}
