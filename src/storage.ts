@@ -5,6 +5,7 @@ const KEYS = {
   players: 'stableford:players',
   rounds: 'stableford:rounds',
   activeRoundId: 'stableford:activeRoundId',
+  lang: 'stableford:lang',
 } as const
 
 function load<T>(key: string, fallback: T): T {
@@ -88,4 +89,12 @@ export function getActiveRoundId(): string | null {
 export function setActiveRoundId(id: string | null): void {
   if (id) localStorage.setItem(KEYS.activeRoundId, id)
   else localStorage.removeItem(KEYS.activeRoundId)
+}
+
+export function getLang(): string | null {
+  return localStorage.getItem(KEYS.lang)
+}
+
+export function setLang(lang: string): void {
+  localStorage.setItem(KEYS.lang, lang)
 }

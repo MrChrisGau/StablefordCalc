@@ -1,5 +1,6 @@
 import type { Course, GameMode, HoleInfo, MatchHoleConcession, Player, Round, Tee } from './types'
-import { courseHandicap, strokesForHole } from './stableford'
+import { courseHandicap, effectivePar, strokesForHole } from './stableford'
+import type { TFunc } from './i18n'
 
 export type StrokeplayVariant = 'gross' | 'net'
 
@@ -21,7 +22,7 @@ export function computeStrokeplayResults(
   return course.holes.map((hole) => {
     const strokesReceived = strokesForHole(hcp, hole, course.holeCount)
     const gross = scores[hole.number]
-    const par = variant === 'net' ? hole.par + strokesReceived : hole.par
+    const par = variant === 'net' ? effectivePar(hole, tee) + strokesReceived : effectivePar(hole, tee)
     return {
       hole,
       gross,
@@ -37,9 +38,9 @@ export function totalDiffToPar(results: StrokeplayHoleResult[]): number | undefi
   return played.reduce((sum, r) => sum + (r.diffToPar ?? 0), 0)
 }
 
-export function formatDiff(n: number | undefined): string {
+export function formatDiff(n: number | undefined, t: TFunc): string {
   if (n === undefined) return '–'
-  if (n === 0) return 'E'
+  if (n === 0) return t('match.even')
   return n > 0 ? `+${n}` : `${n}`
 }
 
@@ -109,9 +110,9 @@ export function matchStatus(outcomes: MatchHoleOutcome[]): MatchStatus {
   return { diff, leaderSideId, holesDecided }
 }
 
-export function formatMatchStatus(status: MatchStatus, leaderLabel: string | undefined): string {
-  if (status.diff === 0 || !leaderLabel) return 'AS'
-  return `${leaderLabel} ${status.diff}Up`
+export function formatMatchStatus(status: MatchStatus, leaderLabel: string | undefined, t: TFunc): string {
+  if (status.diff === 0 || !leaderLabel) return t('match.allSquare')
+  return t('match.up', { name: leaderLabel, n: status.diff })
 }
 
 export function matchVariant(gameMode: GameMode): StrokeplayVariant {

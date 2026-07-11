@@ -2,15 +2,20 @@ import { useMemo, useState } from 'react'
 import type { Course, GameMode, Player, Round, RoundPlayer, RoundTeam } from '../types'
 import { isMatchplay, isSinglesMatchplay, isTeamMatchplay } from '../types'
 import { genId } from '../storage'
+import { useTranslation, type TFunc } from '../i18n'
 
-const GAME_MODE_LABELS: Record<GameMode, string> = {
-  stableford: 'Stableford',
-  strokeplay_gross: 'Brutto-Zählspiel',
-  strokeplay_net: 'Netto-Zählspiel',
-  matchplay_gross: 'Brutto-Matchplay',
-  matchplay_net: 'Netto-Matchplay',
-  matchplay_fourball: 'Fourball Bestball',
-  matchplay_foursomes: 'Klassischer Vierer',
+const GAME_MODES: GameMode[] = [
+  'stableford',
+  'strokeplay_gross',
+  'strokeplay_net',
+  'matchplay_gross',
+  'matchplay_net',
+  'matchplay_fourball',
+  'matchplay_foursomes',
+]
+
+function gameModeLabel(mode: GameMode, t: TFunc): string {
+  return t(`gameMode.${mode}`)
 }
 
 function requiredPlayerCount(mode: GameMode): number | null {
@@ -26,6 +31,7 @@ interface Props {
 }
 
 export default function RoundSetupPage({ courses, players, onStart }: Props) {
+  const { t } = useTranslation()
   const [courseId, setCourseId] = useState(courses[0]?.id ?? '')
   const [selection, setSelection] = useState<RoundPlayer[]>([])
   const [gameMode, setGameMode] = useState<GameMode>('stableford')
@@ -57,7 +63,7 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
         ? [...selection, { playerId: player.id, teeId: defaultTeeFor(player) }]
         : null
     if (next === null) {
-      setError('Es können maximal 4 Spieler an einer Runde teilnehmen.')
+      setError(t('roundSetup.errorMaxPlayers'))
       return
     }
     setSelection(next)
@@ -73,20 +79,20 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
 
   function handleStart() {
     if (!course) {
-      setError('Bitte einen Platz auswählen.')
+      setError(t('roundSetup.errorNoCourse'))
       return
     }
     if (selection.length === 0) {
-      setError('Bitte mindestens einen Spieler auswählen.')
+      setError(t('roundSetup.errorNoPlayers'))
       return
     }
     if (selection.some((s) => !s.teeId)) {
-      setError('Bitte für jeden Spieler einen Abschlag wählen.')
+      setError(t('roundSetup.errorNoTee'))
       return
     }
     const required = requiredPlayerCount(gameMode)
     if (required !== null && selection.length !== required) {
-      setError(`${GAME_MODE_LABELS[gameMode]} erfordert genau ${required} Spieler.`)
+      setError(t('roundSetup.errorModeRequiresPlayers', { mode: gameModeLabel(gameMode, t), count: required }))
       return
     }
 
@@ -95,7 +101,7 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
       const team0 = selection.filter((s, idx) => teamIndexOf(s.playerId, idx) === 0).map((s) => s.playerId)
       const team1 = selection.filter((s, idx) => teamIndexOf(s.playerId, idx) === 1).map((s) => s.playerId)
       if (team0.length !== 2 || team1.length !== 2) {
-        setError('Bitte genau 2 Spieler pro Team zuordnen.')
+        setError(t('roundSetup.errorTeams'))
         return
       }
       teams = [{ playerIds: team0 as [string, string] }, { playerIds: team1 as [string, string] }]
@@ -118,18 +124,18 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
   }
 
   if (courses.length === 0) {
-    return <div className="page"><p className="hint">Bitte zuerst einen Platz unter „Plätze“ anlegen.</p></div>
+    return <div className="page"><p className="hint">{t('roundSetup.needCourse')}</p></div>
   }
   if (players.length === 0) {
-    return <div className="page"><p className="hint">Bitte zuerst Spieler unter „Spieler“ anlegen.</p></div>
+    return <div className="page"><p className="hint">{t('roundSetup.needPlayers')}</p></div>
   }
 
   return (
     <div className="page">
-      <h2>Neue Runde</h2>
+      <h2>{t('roundSetup.title')}</h2>
 
       <label className="field">
-        <span>Platz</span>
+        <span>{t('roundSetup.course')}</span>
         <select value={courseId} onChange={(e) => { setCourseId(e.target.value); setSelection([]) }}>
           {courses.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
@@ -137,7 +143,7 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
         </select>
       </label>
 
-      <h3>Spieler (max. 4)</h3>
+      <h3>{t('roundSetup.playersMax')}</h3>
       <ul className="list">
         {players.map((player) => {
           const sel = selection.find((s) => s.playerId === player.id)
@@ -145,13 +151,13 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
             <li key={player.id} className="list-item">
               <label className="checkbox-row">
                 <input type="checkbox" checked={!!sel} onChange={() => togglePlayer(player)} />
-                <span>{player.firstName} {player.lastName} (HCP {player.handicap})</span>
+                <span>{t('roundSetup.playerSummary', { first: player.firstName, last: player.lastName, handicap: player.handicap })}</span>
               </label>
               {sel && course && (
                 <select value={sel.teeId} onChange={(e) => setTee(player.id, e.target.value)}>
                   {course.tees.map((tee) => (
                     <option key={tee.id} value={tee.id}>
-                      {tee.name} ({tee.gender === 'M' ? 'Herren' : 'Damen'})
+                      {tee.name} ({tee.gender === 'M' ? t('common.men') : t('common.women')})
                     </option>
                   ))}
                 </select>
@@ -162,23 +168,23 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
       </ul>
 
       <label className="field">
-        <span>Spielart</span>
+        <span>{t('roundSetup.gameMode')}</span>
         <select value={gameMode} onChange={(e) => setGameMode(e.target.value as GameMode)}>
-          {(Object.keys(GAME_MODE_LABELS) as GameMode[]).map((mode) => {
+          {GAME_MODES.map((mode) => {
             const required = requiredPlayerCount(mode)
             return (
               <option key={mode} value={mode} disabled={required !== null && selection.length !== required}>
-                {GAME_MODE_LABELS[mode]}
+                {gameModeLabel(mode, t)}
               </option>
             )
           })}
         </select>
-        <span className="muted">Einzel-Matchplay benötigt genau 2, Team-Matchplay (Vierer/Fourball) genau 4 Spieler.</span>
+        <span className="muted">{t('roundSetup.matchplayHint')}</span>
       </label>
 
       {isTeamMatchplay(gameMode) && selection.length === 4 && (
         <label className="field">
-          <span>Teams</span>
+          <span>{t('roundSetup.teams')}</span>
           <div className="stack">
             {selection.map((s, idx) => {
               const player = players.find((p) => p.id === s.playerId)!
@@ -187,7 +193,7 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
                 <div className="team-assign-row" key={s.playerId}>
                   <span className="entry-name">{player.firstName} {player.lastName}</span>
                   <button type="button" className="secondary" onClick={() => toggleTeam(s.playerId, idx)}>
-                    Team {team + 1}
+                    {t('roundSetup.team', { n: team + 1 })}
                   </button>
                 </div>
               )
@@ -198,7 +204,7 @@ export default function RoundSetupPage({ courses, players, onStart }: Props) {
 
       {error && <p className="error">{error}</p>}
 
-      <button className="primary" onClick={handleStart}>Runde starten</button>
+      <button className="primary" onClick={handleStart}>{t('roundSetup.start')}</button>
     </div>
   )
 }

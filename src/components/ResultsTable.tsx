@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { Course, Player, Round } from '../types'
 import { computeHoleResults, courseHandicap, holesPlayed, totalPoints } from '../stableford'
 import { computeStrokeplayResults, formatDiff, totalDiffToPar } from '../scoring'
+import { useTranslation } from '../i18n'
 
 interface Props {
   course: Course
@@ -20,6 +21,7 @@ interface Row {
 }
 
 export default function ResultsTable({ course, round, players, showThru = true }: Props) {
+  const { t } = useTranslation()
   const isNet = round.gameMode === 'strokeplay_net'
   const isStrokeplay = round.gameMode === 'strokeplay_gross' || round.gameMode === 'strokeplay_net'
 
@@ -40,7 +42,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
           handicap,
           thru: results.filter((r) => r.gross !== undefined).length,
           value,
-          display: formatDiff(value),
+          display: formatDiff(value, t),
         }
       }
 
@@ -64,17 +66,17 @@ export default function ResultsTable({ course, round, players, showThru = true }
       }
       return (b.value ?? 0) - (a.value ?? 0)
     })
-  }, [course, round, players, isStrokeplay, isNet])
+  }, [course, round, players, isStrokeplay, isNet, t])
 
   return (
     <table>
       <thead>
         <tr>
-          <th>Platz</th>
-          <th>Spieler</th>
-          <th>Vorgabe</th>
-          {showThru && <th>Thru</th>}
-          <th>{isStrokeplay ? '+/-' : 'Punkte'}</th>
+          <th>{t('results.rank')}</th>
+          <th>{t('results.player')}</th>
+          <th>{t('results.handicap')}</th>
+          {showThru && <th>{t('results.thru')}</th>}
+          <th>{isStrokeplay ? t('results.diff') : t('results.points')}</th>
         </tr>
       </thead>
       <tbody>

@@ -1,7 +1,8 @@
 import type { Course, HoleInfo, MatchHoleConcession, Player, Round } from '../types'
 import { isMatchplay, isTeamMatchplay } from '../types'
-import { courseHandicap, strokesForHole, holePoints } from '../stableford'
+import { courseHandicap, effectivePar, strokesForHole, holePoints } from '../stableford'
 import { buildMatchSides, formatDiff } from '../scoring'
+import { useTranslation } from '../i18n'
 
 interface Props {
   course: Course
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function HoleEntry({ course, round, hole, players, onUpdate }: Props) {
+  const { t } = useTranslation()
   const matchplay = isMatchplay(round.gameMode)
   const teamMatchplay = isTeamMatchplay(round.gameMode)
   const foursomes = round.gameMode === 'matchplay_foursomes'
@@ -64,14 +66,15 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
             const gross = round.scores[player.id]?.[hole.number]
             const hcp = courseHandicap(player.handicap, tee, course)
             const strokesReceived = strokesForHole(hcp, hole, course.holeCount)
+            const par = effectivePar(hole, tee)
 
             let resultDisplay = '–'
             if (!matchplay && gross !== undefined) {
               if (round.gameMode === 'stableford') {
-                resultDisplay = `${holePoints(gross, hole, strokesReceived)} Pkt`
+                resultDisplay = t('holeEntry.points', { points: holePoints(gross, par, strokesReceived) })
               } else {
-                const par = netVariant ? hole.par + strokesReceived : hole.par
-                resultDisplay = formatDiff(gross - par)
+                const netPar = netVariant ? par + strokesReceived : par
+                resultDisplay = formatDiff(gross - netPar, t)
               }
             }
 
@@ -79,9 +82,9 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
               <div className="entry-row" key={player.id}>
                 <div className="entry-name">{player.firstName} {player.lastName}</div>
                 <div className="stepper">
-                  <button onClick={() => setStrokes(player.id, (gross ?? hole.par + 1) - 1)}>−</button>
+                  <button onClick={() => setStrokes(player.id, (gross ?? par + 1) - 1)}>−</button>
                   <span className="stepper-value">{gross ?? '–'}</span>
-                  <button onClick={() => setStrokes(player.id, (gross ?? hole.par - 1) + 1)}>+</button>
+                  <button onClick={() => setStrokes(player.id, (gross ?? par - 1) + 1)}>+</button>
                 </div>
                 {!matchplay && <div className="entry-points">{resultDisplay}</div>}
               </div>
@@ -101,7 +104,7 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
                 className={`secondary concede-btn ${active ? 'active' : ''}`}
                 onClick={() => setConcession(active ? undefined : { type: 'won', sideId: side.sideId })}
               >
-                {side.label} gewinnt
+                {t('holeEntry.wins', { name: side.label })}
               </button>
             )
           })}
@@ -109,7 +112,7 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
             className={`secondary concede-btn ${current?.type === 'halved' ? 'active' : ''}`}
             onClick={() => setConcession(current?.type === 'halved' ? undefined : { type: 'halved' })}
           >
-            Geteilt
+            {t('holeEntry.halved')}
           </button>
         </div>
       )}

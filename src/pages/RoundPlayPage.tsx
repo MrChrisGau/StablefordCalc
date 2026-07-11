@@ -3,6 +3,7 @@ import { isMatchplay } from '../types'
 import ResultsTable from '../components/ResultsTable'
 import MatchplayStatus from '../components/MatchplayStatus'
 import HoleEntry from '../components/HoleEntry'
+import { useTranslation } from '../i18n'
 
 interface Props {
   round: Round
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function RoundPlayPage({ round, course, players, onUpdate, onFinish }: Props) {
+  const { t } = useTranslation()
   const hole = course.holes.find((h) => h.number === round.currentHole) ?? course.holes[0]
   const matchplay = isMatchplay(round.gameMode)
 
@@ -44,11 +46,11 @@ export default function RoundPlayPage({ round, course, players, onUpdate, onFini
       </div>
 
       <div className="hole-nav">
-        <button className="secondary" onClick={() => changeHole(-1)} disabled={round.currentHole <= 1}>‹ Bahn</button>
+        <button className="secondary" onClick={() => changeHole(-1)} disabled={round.currentHole <= 1}>{t('roundPlay.prevHole')}</button>
         <div className="hole-title">
-          Bahn {hole.number} · Par {hole.par} · Bahn-HCP {hole.strokeIndex}
+          {t('roundPlay.holeTitle', { number: hole.number, par: hole.par, si: hole.strokeIndex })}
         </div>
-        <button className="secondary" onClick={() => changeHole(1)} disabled={round.currentHole >= course.holeCount}>Bahn ›</button>
+        <button className="secondary" onClick={() => changeHole(1)} disabled={round.currentHole >= course.holeCount}>{t('roundPlay.nextHole')}</button>
       </div>
 
       <HoleEntry course={course} round={round} hole={hole} players={players} onUpdate={onUpdate} />
@@ -67,7 +69,7 @@ export default function RoundPlayPage({ round, course, players, onUpdate, onFini
 
       <div className="actions">
         <button className="danger" onClick={onFinish}>
-          {allHolesEntered ? 'Runde abschließen' : 'Runde vorzeitig beenden'}
+          {allHolesEntered ? t('roundPlay.finish') : t('roundPlay.finishEarly')}
         </button>
       </div>
     </div>

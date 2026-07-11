@@ -6,8 +6,10 @@ import RoundSetupPage from './RoundSetupPage'
 import RoundPlayPage from './RoundPlayPage'
 import ResultsTable from '../components/ResultsTable'
 import MatchplayStatus from '../components/MatchplayStatus'
+import { useTranslation } from '../i18n'
 
 export default function RoundPage() {
+  const { t } = useTranslation()
   const courses = getCourses()
   const players = getPlayers()
 
@@ -35,7 +37,7 @@ export default function RoundPage() {
 
   function handleFinish() {
     if (!round) return
-    if (!confirm('Runde jetzt abschließen?')) return
+    if (!confirm(t('round.confirmFinish'))) return
     const finishedRound: Round = { ...round, status: 'finished' }
     upsertRound(finishedRound)
     setActiveRoundId(null)
@@ -46,13 +48,13 @@ export default function RoundPage() {
   if (finished && course) {
     return (
       <div className="page">
-        <h2>Ergebnis: {course.name}</h2>
+        <h2>{t('round.result', { course: course.name })}</h2>
         {isMatchplay(finished.gameMode) ? (
           <MatchplayStatus course={course} round={finished} players={players} showThru={false} />
         ) : (
           <ResultsTable course={course} round={finished} players={players} showThru={false} />
         )}
-        <button className="primary" onClick={() => setFinished(null)}>Neue Runde starten</button>
+        <button className="primary" onClick={() => setFinished(null)}>{t('round.newRound')}</button>
       </div>
     )
   }

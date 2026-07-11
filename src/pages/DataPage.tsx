@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import type { Course, Player } from '../types'
 import { getCourses, getPlayers, upsertCourse, upsertPlayer } from '../storage'
+import { useTranslation, type Lang } from '../i18n'
 
 interface Backup {
   courses: Course[]
@@ -17,6 +18,7 @@ function isBackup(data: unknown): data is Backup {
 }
 
 export default function DataPage() {
+  const { t, lang, setLang } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState('')
 
@@ -40,31 +42,36 @@ export default function DataPage() {
     try {
       data = JSON.parse(await file.text())
     } catch {
-      setMessage('Die Datei konnte nicht gelesen werden.')
+      setMessage(t('data.errorRead'))
       return
     }
     if (!isBackup(data)) {
-      setMessage('Die Datei enthält keine gültigen Stableford-Daten.')
+      setMessage(t('data.errorInvalid'))
       return
     }
-    const proceed = confirm(
-      `${data.courses.length} Plätze und ${data.players.length} Spieler importieren? Bestehende Einträge mit gleicher ID werden überschrieben.`,
-    )
+    const proceed = confirm(t('data.confirmImport', { courses: data.courses.length, players: data.players.length }))
     if (!proceed) return
     data.courses.forEach(upsertCourse)
     data.players.forEach(upsertPlayer)
-    setMessage(`${data.courses.length} Plätze und ${data.players.length} Spieler importiert.`)
+    setMessage(t('data.importSuccess', { courses: data.courses.length, players: data.players.length }))
   }
 
   return (
     <div className="page">
-      <h2>Daten sichern</h2>
-      <p className="hint">
-        Exportiere Plätze und Spieler als Datei, um sie zu sichern oder auf ein anderes Gerät zu übertragen.
-      </p>
+      <h2>{t('data.title')}</h2>
+
+      <label className="field">
+        <span>{t('data.language')}</span>
+        <select value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+          <option value="de">{t('data.languageDe')}</option>
+          <option value="en">{t('data.languageEn')}</option>
+        </select>
+      </label>
+
+      <p className="hint">{t('data.hint')}</p>
       <div className="stack">
-        <button className="primary" onClick={handleExport}>Daten exportieren</button>
-        <button className="secondary" onClick={() => fileInputRef.current?.click()}>Daten importieren</button>
+        <button className="primary" onClick={handleExport}>{t('data.export')}</button>
+        <button className="secondary" onClick={() => fileInputRef.current?.click()}>{t('data.import')}</button>
       </div>
       <input
         ref={fileInputRef}

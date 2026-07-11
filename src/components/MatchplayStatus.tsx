@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { Course, Player, Round } from '../types'
 import { buildMatchSides, computeMatchHoleOutcomes, formatMatchStatus, matchStatus, matchVariant } from '../scoring'
+import { useTranslation } from '../i18n'
 
 interface Props {
   course: Course
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function MatchplayStatus({ course, round, players, showThru = true }: Props) {
+  const { t } = useTranslation()
   const sides = useMemo(() => buildMatchSides(course, round, players), [course, round, players])
 
   const status = useMemo(() => {
@@ -28,14 +30,14 @@ export default function MatchplayStatus({ course, round, players, showThru = tru
     <div className="match-status">
       <div className={`match-player ${status.leaderSideId === sideA.sideId ? 'leading' : ''}`}>
         {sideA.label}
-        {isNet && <span className="match-hcp"> (Vorgabe {sideA.courseHandicap})</span>}
+        {isNet && <span className="match-hcp">{t('match.handicapSuffix', { n: sideA.courseHandicap })}</span>}
       </div>
-      <div className="match-score">{formatMatchStatus(status, leaderLabel)}</div>
+      <div className="match-score">{formatMatchStatus(status, leaderLabel, t)}</div>
       <div className={`match-player ${status.leaderSideId === sideB.sideId ? 'leading' : ''}`}>
         {sideB.label}
-        {isNet && <span className="match-hcp"> (Vorgabe {sideB.courseHandicap})</span>}
+        {isNet && <span className="match-hcp">{t('match.handicapSuffix', { n: sideB.courseHandicap })}</span>}
       </div>
-      {showThru && <div className="match-thru">Thru {status.holesDecided}/{course.holeCount}</div>}
+      {showThru && <div className="match-thru">{t('match.thru', { n: status.holesDecided, total: course.holeCount })}</div>}
     </div>
   )
 }

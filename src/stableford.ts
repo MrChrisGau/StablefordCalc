@@ -1,12 +1,17 @@
 import type { Course, HoleInfo, Tee } from './types'
 
-export function totalPar(course: Course): number {
-  return course.holes.reduce((sum, h) => sum + h.par, 0)
+/** Par einer Bahn für einen bestimmten Abschlag, inkl. optionalem Override. */
+export function effectivePar(hole: HoleInfo, tee: Tee): number {
+  return tee.parOverrides?.[hole.number] ?? hole.par
+}
+
+export function totalPar(course: Course, tee?: Tee): number {
+  return course.holes.reduce((sum, h) => sum + (tee ? effectivePar(h, tee) : h.par), 0)
 }
 
 /** Course Handicap nach WHS-Formel: HCP x (Slope/113) + (CR - Par), gerundet. */
 export function courseHandicap(handicapIndex: number, tee: Tee, course: Course): number {
-  const raw = handicapIndex * (tee.slope / 113) + (tee.courseRating - totalPar(course))
+  const raw = handicapIndex * (tee.slope / 113) + (tee.courseRating - totalPar(course, tee))
   return Math.round(raw)
 }
 
@@ -21,8 +26,8 @@ export function strokesForHole(courseHcp: number, hole: HoleInfo, holeCount: num
 }
 
 /** Stableford-Punkte für eine Bahn: 2 minus Abweichung vom Netto-Par, min. 0. */
-export function holePoints(gross: number, hole: HoleInfo, strokesReceived: number): number {
-  const netPar = hole.par + strokesReceived
+export function holePoints(gross: number, par: number, strokesReceived: number): number {
+  const netPar = par + strokesReceived
   return Math.max(0, 2 - (gross - netPar))
 }
 
@@ -47,7 +52,7 @@ export function computeHoleResults(
       hole,
       gross,
       strokesReceived,
-      points: gross === undefined ? undefined : holePoints(gross, hole, strokesReceived),
+      points: gross === undefined ? undefined : holePoints(gross, effectivePar(hole, tee), strokesReceived),
     }
   })
 }

@@ -6,6 +6,7 @@ export interface Tee {
   gender: Gender
   courseRating: number
   slope: number
+  parOverrides?: Record<number, number> // Lochnummer -> abweichendes Par für diesen Abschlag
 }
 
 export interface HoleInfo {

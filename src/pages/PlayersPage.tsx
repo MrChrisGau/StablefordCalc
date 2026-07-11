@@ -2,12 +2,14 @@ import { useState } from 'react'
 import type { Player } from '../types'
 import { deletePlayer, genId, getPlayers, upsertPlayer } from '../storage'
 import DecimalInput from '../components/DecimalInput'
+import { useTranslation } from '../i18n'
 
 function emptyPlayer(): Player {
   return { id: genId(), firstName: '', lastName: '', handicap: 36, gender: 'M' }
 }
 
 export default function PlayersPage() {
+  const { t } = useTranslation()
   const [players, setPlayers] = useState<Player[]>(getPlayers())
   const [editing, setEditing] = useState<Player | null>(null)
   const [error, setError] = useState('')
@@ -17,7 +19,7 @@ export default function PlayersPage() {
   }
 
   function handleDelete(id: string) {
-    if (!confirm('Diesen Spieler wirklich löschen?')) return
+    if (!confirm(t('players.confirmDelete'))) return
     deletePlayer(id)
     refresh()
   }
@@ -25,7 +27,7 @@ export default function PlayersPage() {
   function handleSave() {
     if (!editing) return
     if (!editing.firstName.trim() || !editing.lastName.trim()) {
-      setError('Bitte Vor- und Nachnamen angeben.')
+      setError(t('players.errorName'))
       return
     }
     upsertPlayer(editing)
@@ -36,10 +38,10 @@ export default function PlayersPage() {
   if (editing) {
     return (
       <div className="page">
-        <h2>{players.some((p) => p.id === editing.id) ? 'Spieler bearbeiten' : 'Neuer Spieler'}</h2>
+        <h2>{players.some((p) => p.id === editing.id) ? t('players.editTitle') : t('players.newTitle')}</h2>
 
         <label className="field">
-          <span>Vorname</span>
+          <span>{t('players.firstName')}</span>
           <input
             value={editing.firstName}
             onChange={(e) => setEditing({ ...editing, firstName: e.target.value })}
@@ -47,7 +49,7 @@ export default function PlayersPage() {
         </label>
 
         <label className="field">
-          <span>Name</span>
+          <span>{t('players.lastName')}</span>
           <input
             value={editing.lastName}
             onChange={(e) => setEditing({ ...editing, lastName: e.target.value })}
@@ -55,7 +57,7 @@ export default function PlayersPage() {
         </label>
 
         <label className="field">
-          <span>Handicap</span>
+          <span>{t('players.handicap')}</span>
           <DecimalInput
             value={editing.handicap}
             onChange={(value) => setEditing({ ...editing, handicap: value })}
@@ -63,21 +65,21 @@ export default function PlayersPage() {
         </label>
 
         <label className="field">
-          <span>Geschlecht</span>
+          <span>{t('players.gender')}</span>
           <select
             value={editing.gender}
             onChange={(e) => setEditing({ ...editing, gender: e.target.value as Player['gender'] })}
           >
-            <option value="M">Herren</option>
-            <option value="W">Damen</option>
+            <option value="M">{t('common.men')}</option>
+            <option value="W">{t('common.women')}</option>
           </select>
         </label>
 
         {error && <p className="error">{error}</p>}
 
         <div className="actions">
-          <button className="secondary" onClick={() => setEditing(null)}>Abbrechen</button>
-          <button className="primary" onClick={handleSave}>Speichern</button>
+          <button className="secondary" onClick={() => setEditing(null)}>{t('common.cancel')}</button>
+          <button className="primary" onClick={handleSave}>{t('common.save')}</button>
         </div>
       </div>
     )
@@ -85,25 +87,25 @@ export default function PlayersPage() {
 
   return (
     <div className="page">
-      <h2>Spieler</h2>
-      {players.length === 0 && <p className="hint">Noch keine Spieler angelegt.</p>}
+      <h2>{t('players.title')}</h2>
+      {players.length === 0 && <p className="hint">{t('players.empty')}</p>}
       <ul className="list">
         {players.map((player) => (
           <li key={player.id} className="list-item">
             <div>
               <strong>{player.firstName} {player.lastName}</strong>
               <div className="muted">
-                HCP {player.handicap} · {player.gender === 'M' ? 'Herren' : 'Damen'}
+                {t('players.summary', { handicap: player.handicap, gender: player.gender === 'M' ? t('common.men') : t('common.women') })}
               </div>
             </div>
             <div className="list-actions">
-              <button className="secondary" onClick={() => setEditing(structuredClone(player))}>Bearbeiten</button>
-              <button className="danger" onClick={() => handleDelete(player.id)}>Löschen</button>
+              <button className="secondary" onClick={() => setEditing(structuredClone(player))}>{t('common.edit')}</button>
+              <button className="danger" onClick={() => handleDelete(player.id)}>{t('common.delete')}</button>
             </div>
           </li>
         ))}
       </ul>
-      <button className="primary" onClick={() => { setError(''); setEditing(emptyPlayer()) }}>+ Neuer Spieler</button>
+      <button className="primary" onClick={() => { setError(''); setEditing(emptyPlayer()) }}>{t('players.addNew')}</button>
     </div>
   )
 }
