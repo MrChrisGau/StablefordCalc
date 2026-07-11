@@ -16,6 +16,7 @@ interface Row {
   name: string
   handicap: number
   thru: number
+  grossTotal: number | undefined
   value: number | undefined
   display: string
 }
@@ -24,6 +25,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
   const { t } = useTranslation()
   const isNet = round.gameMode === 'strokeplay_net'
   const isStrokeplay = round.gameMode === 'strokeplay_gross' || round.gameMode === 'strokeplay_net'
+  const isStableford = round.gameMode === 'stableford'
 
   const rows = useMemo<Row[]>(() => {
     const computed = round.players.map((rp) => {
@@ -41,6 +43,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
           name,
           handicap,
           thru: results.filter((r) => r.gross !== undefined).length,
+          grossTotal: undefined,
           value,
           display: formatDiff(value, t),
         }
@@ -48,11 +51,13 @@ export default function ResultsTable({ course, round, players, showThru = true }
 
       const results = computeHoleResults(course, tee, player.handicap, scores)
       const value = totalPoints(results)
+      const played = results.filter((r) => r.gross !== undefined)
       return {
         playerId: player.id,
         name,
         handicap,
         thru: holesPlayed(results),
+        grossTotal: played.length === 0 ? undefined : played.reduce((sum, r) => sum + (r.gross ?? 0), 0),
         value,
         display: String(value),
       }
@@ -76,6 +81,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
           <th>{t('results.player')}</th>
           <th>{t('results.handicap')}</th>
           {showThru && <th>{t('results.thru')}</th>}
+          {isStableford && <th>{t('results.gross')}</th>}
           <th>{isStrokeplay ? t('results.diff') : t('results.points')}</th>
         </tr>
       </thead>
@@ -86,6 +92,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
             <td>{row.name}</td>
             <td>{row.handicap}</td>
             {showThru && <td>{row.thru}/{course.holeCount}</td>}
+            {isStableford && <td>{row.grossTotal ?? '–'}</td>}
             <td className="points">{row.display}</td>
           </tr>
         ))}

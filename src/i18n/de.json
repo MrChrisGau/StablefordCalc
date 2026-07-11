@@ -97,6 +97,7 @@
   "results.handicap": "Vorgabe",
   "results.thru": "Thru",
   "results.diff": "+/-",
+  "results.gross": "Brutto",
   "results.points": "Punkte",
 
   "match.handicapSuffix": " (Vorgabe {{n}})",

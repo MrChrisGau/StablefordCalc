@@ -97,6 +97,7 @@
   "results.handicap": "Hcp",
   "results.thru": "Thru",
   "results.diff": "+/-",
+  "results.gross": "Gross",
   "results.points": "Points",
 
   "match.handicapSuffix": " (Hcp {{n}})",
