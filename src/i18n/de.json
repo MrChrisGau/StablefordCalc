@@ -91,6 +91,7 @@
   "holeEntry.wins": "{{name}} gewinnt",
   "holeEntry.halved": "Geteilt",
   "holeEntry.points": "{{points}} Pkt",
+  "holeEntry.pickedUp": "Gestrichen",
 
   "results.rank": "Platz",
   "results.player": "Spieler",

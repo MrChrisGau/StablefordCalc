@@ -65,6 +65,7 @@ export interface Round {
   matchConcessions?: Record<number, MatchHoleConcession> // nur bei matchplay_*: holeNumber -> manuell festgelegtes Ergebnis
   teams?: [RoundTeam, RoundTeam] // nur bei matchplay_fourball/foursomes
   teamScores?: Record<number, Record<number, number>> // nur bei matchplay_foursomes: teamIndex -> holeNumber -> Schläge
+  pickedUp?: Record<string, Record<number, true>> // nur bei stableford: playerId -> holeNumber -> als gestrichen markiert
 }
 
 export function isSinglesMatchplay(mode: GameMode): boolean {

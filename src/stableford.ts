@@ -36,6 +36,12 @@ export interface HoleResult {
   gross: number | undefined
   strokesReceived: number
   points: number | undefined
+  pickedUp: boolean
+}
+
+/** Bruttoschläge für ein gestrichenes Loch: Netto-Doppelbogey plus ein Schlag. */
+export function pickedUpGross(par: number, strokesReceived: number): number {
+  return par + strokesReceived + 3
 }
 
 export function computeHoleResults(
@@ -43,16 +49,22 @@ export function computeHoleResults(
   tee: Tee,
   handicapIndex: number,
   scores: Record<number, number>,
+  pickedUp?: Record<number, true>,
 ): HoleResult[] {
   const hcp = courseHandicap(handicapIndex, tee, course)
   return course.holes.map((hole) => {
     const strokesReceived = strokesForHole(hcp, hole, course.holeCount)
+    if (pickedUp?.[hole.number]) {
+      const gross = pickedUpGross(effectivePar(hole, tee), strokesReceived)
+      return { hole, gross, strokesReceived, points: 0, pickedUp: true }
+    }
     const gross = scores[hole.number]
     return {
       hole,
       gross,
       strokesReceived,
       points: gross === undefined ? undefined : holePoints(gross, effectivePar(hole, tee), strokesReceived),
+      pickedUp: false,
     }
   })
 }

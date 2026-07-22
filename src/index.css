@@ -244,16 +244,17 @@ button.icon-btn {
 .holes-table {
   border: 1px solid var(--border);
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
   margin-bottom: 0.75rem;
 }
 
 .holes-header, .holes-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
   gap: 0.4rem;
   padding: 0.4rem 0.6rem;
   align-items: center;
+  width: max-content;
+  min-width: 100%;
 }
 
 .holes-header {
@@ -262,9 +263,17 @@ button.icon-btn {
   font-size: 0.85rem;
 }
 
-.holes-row input {
+.holes-header span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.holes-row input,
+.holes-row select {
   padding: 0.4rem;
   width: 100%;
+  font-size: 0.95rem;
 }
 
 table {
@@ -368,6 +377,38 @@ td.points {
   width: 4.5rem;
   text-align: right;
   color: var(--accent);
+  font-weight: 600;
+}
+
+.entry-row-stableford {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.entry-row-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.entry-pickedup {
+  flex: 1;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.entry-strike-btn {
+  flex: 0 0 auto;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.entry-strike-btn.active {
+  background: var(--danger);
+  color: #2a0a06;
   font-weight: 600;
 }
 

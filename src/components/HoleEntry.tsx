@@ -41,6 +41,15 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
     onUpdate({ ...round, matchConcessions })
   }
 
+  function setPickedUp(playerId: string, value: boolean) {
+    const pickedUp = { ...round.pickedUp }
+    const playerPickedUp = { ...pickedUp[playerId] }
+    if (value) playerPickedUp[hole.number] = true
+    else delete playerPickedUp[hole.number]
+    pickedUp[playerId] = playerPickedUp
+    onUpdate({ ...round, pickedUp })
+  }
+
   const current = round.matchConcessions?.[hole.number]
   const sides = teamMatchplay ? buildMatchSides(course, round, players) : null
 
@@ -67,15 +76,49 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
             const hcp = courseHandicap(player.handicap, tee, course)
             const strokesReceived = strokesForHole(hcp, hole, course.holeCount)
             const par = effectivePar(hole, tee)
+            const stableford = round.gameMode === 'stableford'
+            const isPickedUp = stableford && !!round.pickedUp?.[player.id]?.[hole.number]
 
             let resultDisplay = '–'
-            if (!matchplay && gross !== undefined) {
-              if (round.gameMode === 'stableford') {
-                resultDisplay = t('holeEntry.points', { points: holePoints(gross, par, strokesReceived) })
-              } else {
-                const netPar = netVariant ? par + strokesReceived : par
-                resultDisplay = formatDiff(gross - netPar, t)
+            if (!matchplay) {
+              if (isPickedUp) {
+                resultDisplay = t('holeEntry.points', { points: 0 })
+              } else if (gross !== undefined) {
+                if (stableford) {
+                  resultDisplay = t('holeEntry.points', { points: holePoints(gross, par, strokesReceived) })
+                } else {
+                  const netPar = netVariant ? par + strokesReceived : par
+                  resultDisplay = formatDiff(gross - netPar, t)
+                }
               }
+            }
+
+            if (stableford) {
+              return (
+                <div className="entry-row entry-row-stableford" key={player.id}>
+                  <div className="entry-row-line">
+                    <div className="entry-name">{player.firstName} {player.lastName}</div>
+                    <div className="entry-points">{resultDisplay}</div>
+                  </div>
+                  <div className="entry-row-line">
+                    {isPickedUp ? (
+                      <div className="entry-pickedup">{t('holeEntry.pickedUp')}</div>
+                    ) : (
+                      <div className="stepper">
+                        <button onClick={() => setStrokes(player.id, (gross ?? par + 1) - 1)}>−</button>
+                        <span className="stepper-value">{gross ?? '–'}</span>
+                        <button onClick={() => setStrokes(player.id, (gross ?? par - 1) + 1)}>+</button>
+                      </div>
+                    )}
+                    <button
+                      className={`entry-strike-btn ${isPickedUp ? 'active' : ''}`}
+                      onClick={() => setPickedUp(player.id, !isPickedUp)}
+                    >
+                      {t('holeEntry.pickedUp')}
+                    </button>
+                  </div>
+                </div>
+              )
             }
 
             return (

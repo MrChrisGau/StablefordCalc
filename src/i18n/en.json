@@ -91,6 +91,7 @@
   "holeEntry.wins": "{{name}} wins",
   "holeEntry.halved": "Halved",
   "holeEntry.points": "{{points}} pts",
+  "holeEntry.pickedUp": "Picked up",
 
   "results.rank": "Rank",
   "results.player": "Player",

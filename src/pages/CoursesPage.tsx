@@ -18,6 +18,13 @@ function emptyTee(): Tee {
   return { id: genId(), name: '', gender: 'M', courseRating: 70, slope: 125 }
 }
 
+// Feste Spaltenbreiten statt Gleichverteilung: bei vielen Abschlägen sollen die
+// Eingabefelder lesbar bleiben, die Tabelle scrollt dann horizontal statt die
+// Zahlen unleserlich zusammenzuquetschen.
+function holesGridColumns(teeCount: number): string {
+  return `2.4rem 3.2rem repeat(${teeCount}, 3.6rem) minmax(3.6rem, 1fr)`
+}
+
 export default function CoursesPage() {
   const { t } = useTranslation()
   const [courses, setCourses] = useState<Course[]>(getCourses())
@@ -196,7 +203,7 @@ export default function CoursesPage() {
           <p className="hint">{t('courses.parOverrideHint')}</p>
         )}
         <div className="holes-table">
-          <div className="holes-header" style={{ gridTemplateColumns: `repeat(${3 + editing.tees.length}, 1fr)` }}>
+          <div className="holes-header" style={{ gridTemplateColumns: holesGridColumns(editing.tees.length) }}>
             <span>{t('courses.hole')}</span>
             <span>{t('courses.par')}</span>
             {editing.tees.map((tee) => (
@@ -208,7 +215,7 @@ export default function CoursesPage() {
             <div
               className="holes-row"
               key={hole.number}
-              style={{ gridTemplateColumns: `repeat(${3 + editing.tees.length}, 1fr)` }}
+              style={{ gridTemplateColumns: holesGridColumns(editing.tees.length) }}
             >
               <span>{hole.number}</span>
               <DecimalInput

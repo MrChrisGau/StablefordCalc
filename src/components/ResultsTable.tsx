@@ -49,7 +49,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
         }
       }
 
-      const results = computeHoleResults(course, tee, player.handicap, scores)
+      const results = computeHoleResults(course, tee, player.handicap, scores, round.pickedUp?.[rp.playerId])
       const value = totalPoints(results)
       const played = results.filter((r) => r.gross !== undefined)
       return {
