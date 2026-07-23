@@ -93,11 +93,18 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
               }
             }
 
+            const nameLine = (
+              <div className="entry-name">
+                {player.firstName} {player.lastName}
+                <span className="entry-hcp">{t('holeEntry.handicapSuffix', { n: hcp })}</span>
+              </div>
+            )
+
             if (stableford) {
               return (
-                <div className="entry-row entry-row-stableford" key={player.id}>
+                <div className="entry-row entry-row-multiline" key={player.id}>
                   <div className="entry-row-line">
-                    <div className="entry-name">{player.firstName} {player.lastName}</div>
+                    {nameLine}
                     <div className="entry-points">{resultDisplay}</div>
                   </div>
                   <div className="entry-row-line">
@@ -122,14 +129,18 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
             }
 
             return (
-              <div className="entry-row" key={player.id}>
-                <div className="entry-name">{player.firstName} {player.lastName}</div>
-                <div className="stepper">
-                  <button onClick={() => setStrokes(player.id, (gross ?? par + 1) - 1)}>−</button>
-                  <span className="stepper-value">{gross ?? '–'}</span>
-                  <button onClick={() => setStrokes(player.id, (gross ?? par - 1) + 1)}>+</button>
+              <div className="entry-row entry-row-multiline" key={player.id}>
+                <div className="entry-row-line">
+                  {nameLine}
+                  {!matchplay && <div className="entry-points">{resultDisplay}</div>}
                 </div>
-                {!matchplay && <div className="entry-points">{resultDisplay}</div>}
+                <div className="entry-row-line">
+                  <div className="stepper">
+                    <button onClick={() => setStrokes(player.id, (gross ?? par + 1) - 1)}>−</button>
+                    <span className="stepper-value">{gross ?? '–'}</span>
+                    <button onClick={() => setStrokes(player.id, (gross ?? par - 1) + 1)}>+</button>
+                  </div>
+                </div>
               </div>
             )
           })}

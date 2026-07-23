@@ -380,7 +380,7 @@ td.points {
   font-weight: 600;
 }
 
-.entry-row-stableford {
+.entry-row-multiline {
   flex-direction: column;
   align-items: stretch;
 }
@@ -459,6 +459,12 @@ td.points {
 }
 
 .match-hcp {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.entry-hcp {
   font-weight: 400;
   color: var(--muted);
   font-size: 0.85rem;

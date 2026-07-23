@@ -92,10 +92,10 @@
   "holeEntry.halved": "Geteilt",
   "holeEntry.points": "{{points}} Pkt",
   "holeEntry.pickedUp": "Gestrichen",
+  "holeEntry.handicapSuffix": " ({{n}})",
 
   "results.rank": "Platz",
   "results.player": "Spieler",
-  "results.handicap": "Vorgabe",
   "results.thru": "Thru",
   "results.diff": "+/-",
   "results.gross": "Brutto",

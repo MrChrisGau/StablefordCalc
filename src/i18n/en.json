@@ -92,10 +92,10 @@
   "holeEntry.halved": "Halved",
   "holeEntry.points": "{{points}} pts",
   "holeEntry.pickedUp": "Picked up",
+  "holeEntry.handicapSuffix": " ({{n}})",
 
   "results.rank": "Rank",
   "results.player": "Player",
-  "results.handicap": "Hcp",
   "results.thru": "Thru",
   "results.diff": "+/-",
   "results.gross": "Gross",
