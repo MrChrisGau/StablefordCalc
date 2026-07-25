@@ -94,15 +94,14 @@
   "holeEntry.pickedUp": "Picked up",
   "holeEntry.handicapSuffix": " ({{n}})",
 
-  "results.rank": "Rank",
   "results.player": "Player",
-  "results.thru": "Thru",
   "results.diff": "+/-",
   "results.gross": "Gross",
   "results.strokes": "Strokes",
+  "results.strokesAbbr": "Str",
   "results.grossDiff": "Gross +/-",
   "results.netDiff": "Net +/-",
-  "results.points": "Points",
+  "results.net": "Net",
 
   "match.handicapSuffix": " (Hcp {{n}})",
   "match.thru": "Thru {{n}}/{{total}}",

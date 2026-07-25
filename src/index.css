@@ -283,16 +283,15 @@ table {
 
 th, td {
   padding: 0.5rem 0.4rem;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid var(--border);
 }
 
-td.points, th:nth-child(3), th:nth-child(4) {
-  text-align: right;
+th.col-player, td.col-player {
+  text-align: left;
 }
 
 td.points {
-  text-align: right;
   font-weight: 700;
   color: var(--accent);
 }

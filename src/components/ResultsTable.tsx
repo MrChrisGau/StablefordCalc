@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { Course, Player, Round } from '../types'
-import { computeHoleResults, holesPlayed, totalPoints } from '../stableford'
+import { computeHoleResults, totalGrossPoints, totalPoints } from '../stableford'
 import { computeStrokeplayResults, formatDiff, totalDiffToPar } from '../scoring'
 import { useTranslation } from '../i18n'
 
@@ -8,20 +8,19 @@ interface Props {
   course: Course
   round: Round
   players: Player[]
-  showThru?: boolean
 }
 
 interface Row {
   playerId: string
   name: string
-  thru: number
-  grossTotal: number | undefined
+  strokesTotal: number | undefined
+  grossPoints: number | undefined
   secondaryDisplay: string | undefined
   value: number | undefined
   display: string
 }
 
-export default function ResultsTable({ course, round, players, showThru = true }: Props) {
+export default function ResultsTable({ course, round, players }: Props) {
   const { t } = useTranslation()
   const isNet = round.gameMode === 'strokeplay_net'
   const isStrokeplay = round.gameMode === 'strokeplay_gross' || round.gameMode === 'strokeplay_net'
@@ -45,8 +44,8 @@ export default function ResultsTable({ course, round, players, showThru = true }
         return {
           playerId: player.id,
           name,
-          thru: results.filter((r) => r.gross !== undefined).length,
-          grossTotal: isNet ? undefined : strokesTotal,
+          strokesTotal: isNet ? undefined : strokesTotal,
+          grossPoints: undefined,
           secondaryDisplay: isNet ? formatDiff(grossDiff, t) : undefined,
           value,
           display: formatDiff(value, t),
@@ -59,8 +58,8 @@ export default function ResultsTable({ course, round, players, showThru = true }
       return {
         playerId: player.id,
         name,
-        thru: holesPlayed(results),
-        grossTotal: played.length === 0 ? undefined : played.reduce((sum, r) => sum + (r.gross ?? 0), 0),
+        strokesTotal: played.length === 0 ? undefined : played.reduce((sum, r) => sum + (r.gross ?? 0), 0),
+        grossPoints: totalGrossPoints(results),
         secondaryDisplay: undefined,
         value,
         display: String(value),
@@ -81,23 +80,21 @@ export default function ResultsTable({ course, round, players, showThru = true }
     <table>
       <thead>
         <tr>
-          <th>{t('results.rank')}</th>
-          <th>{t('results.player')}</th>
-          {showThru && <th>{t('results.thru')}</th>}
+          <th className="col-player">{t('results.player')}</th>
+          {isStableford && <th>{t('results.strokesAbbr')}</th>}
           {isStableford && <th>{t('results.gross')}</th>}
           {isStrokeplay && !isNet && <th>{t('results.strokes')}</th>}
           {isStrokeplay && isNet && <th>{t('results.grossDiff')}</th>}
-          <th>{isStrokeplay ? (isNet ? t('results.netDiff') : t('results.diff')) : t('results.points')}</th>
+          <th>{isStrokeplay ? (isNet ? t('results.netDiff') : t('results.diff')) : t('results.net')}</th>
         </tr>
       </thead>
       <tbody>
-        {rows.map((row, i) => (
+        {rows.map((row) => (
           <tr key={row.playerId}>
-            <td>{i + 1}</td>
-            <td>{row.name}</td>
-            {showThru && <td>{row.thru}/{course.holeCount}</td>}
-            {isStableford && <td>{row.grossTotal ?? '–'}</td>}
-            {isStrokeplay && !isNet && <td>{row.grossTotal ?? '–'}</td>}
+            <td className="col-player">{row.name}</td>
+            {isStableford && <td>{row.strokesTotal ?? '–'}</td>}
+            {isStableford && <td>{row.grossPoints ?? '–'}</td>}
+            {isStrokeplay && !isNet && <td>{row.strokesTotal ?? '–'}</td>}
             {isStrokeplay && isNet && <td>{row.secondaryDisplay ?? '–'}</td>}
             <td className="points">{row.display}</td>
           </tr>

@@ -36,6 +36,7 @@ export interface HoleResult {
   gross: number | undefined
   strokesReceived: number
   points: number | undefined
+  grossPoints: number | undefined
   pickedUp: boolean
 }
 
@@ -56,14 +57,16 @@ export function computeHoleResults(
     const strokesReceived = strokesForHole(hcp, hole, course.holeCount)
     if (pickedUp?.[hole.number]) {
       const gross = pickedUpGross(effectivePar(hole, tee), strokesReceived)
-      return { hole, gross, strokesReceived, points: 0, pickedUp: true }
+      return { hole, gross, strokesReceived, points: 0, grossPoints: 0, pickedUp: true }
     }
     const gross = scores[hole.number]
+    const par = effectivePar(hole, tee)
     return {
       hole,
       gross,
       strokesReceived,
-      points: gross === undefined ? undefined : holePoints(gross, effectivePar(hole, tee), strokesReceived),
+      points: gross === undefined ? undefined : holePoints(gross, par, strokesReceived),
+      grossPoints: gross === undefined ? undefined : holePoints(gross, par, 0),
       pickedUp: false,
     }
   })
@@ -73,6 +76,6 @@ export function totalPoints(results: HoleResult[]): number {
   return results.reduce((sum, r) => sum + (r.points ?? 0), 0)
 }
 
-export function holesPlayed(results: HoleResult[]): number {
-  return results.filter((r) => r.gross !== undefined).length
+export function totalGrossPoints(results: HoleResult[]): number {
+  return results.reduce((sum, r) => sum + (r.grossPoints ?? 0), 0)
 }

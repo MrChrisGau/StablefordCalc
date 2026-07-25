@@ -52,7 +52,7 @@ export default function RoundPage() {
         {isMatchplay(finished.gameMode) ? (
           <MatchplayStatus course={course} round={finished} players={players} showThru={false} />
         ) : (
-          <ResultsTable course={course} round={finished} players={players} showThru={false} />
+          <ResultsTable course={course} round={finished} players={players} />
         )}
         <button className="primary" onClick={() => setFinished(null)}>{t('round.newRound')}</button>
       </div>
