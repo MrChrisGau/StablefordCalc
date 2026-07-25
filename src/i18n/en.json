@@ -99,6 +99,9 @@
   "results.thru": "Thru",
   "results.diff": "+/-",
   "results.gross": "Gross",
+  "results.strokes": "Strokes",
+  "results.grossDiff": "Gross +/-",
+  "results.netDiff": "Net +/-",
   "results.points": "Points",
 
   "match.handicapSuffix": " (Hcp {{n}})",

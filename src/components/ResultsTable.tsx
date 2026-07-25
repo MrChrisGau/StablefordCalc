@@ -16,6 +16,7 @@ interface Row {
   name: string
   thru: number
   grossTotal: number | undefined
+  secondaryDisplay: string | undefined
   value: number | undefined
   display: string
 }
@@ -36,11 +37,17 @@ export default function ResultsTable({ course, round, players, showThru = true }
       if (isStrokeplay) {
         const results = computeStrokeplayResults(course, tee, player.handicap, scores, isNet ? 'net' : 'gross')
         const value = totalDiffToPar(results)
+        const played = results.filter((r) => r.gross !== undefined)
+        const strokesTotal = played.length === 0 ? undefined : played.reduce((sum, r) => sum + (r.gross ?? 0), 0)
+        const grossDiff = isNet
+          ? totalDiffToPar(computeStrokeplayResults(course, tee, player.handicap, scores, 'gross'))
+          : undefined
         return {
           playerId: player.id,
           name,
           thru: results.filter((r) => r.gross !== undefined).length,
-          grossTotal: undefined,
+          grossTotal: isNet ? undefined : strokesTotal,
+          secondaryDisplay: isNet ? formatDiff(grossDiff, t) : undefined,
           value,
           display: formatDiff(value, t),
         }
@@ -54,6 +61,7 @@ export default function ResultsTable({ course, round, players, showThru = true }
         name,
         thru: holesPlayed(results),
         grossTotal: played.length === 0 ? undefined : played.reduce((sum, r) => sum + (r.gross ?? 0), 0),
+        secondaryDisplay: undefined,
         value,
         display: String(value),
       }
@@ -77,7 +85,9 @@ export default function ResultsTable({ course, round, players, showThru = true }
           <th>{t('results.player')}</th>
           {showThru && <th>{t('results.thru')}</th>}
           {isStableford && <th>{t('results.gross')}</th>}
-          <th>{isStrokeplay ? t('results.diff') : t('results.points')}</th>
+          {isStrokeplay && !isNet && <th>{t('results.strokes')}</th>}
+          {isStrokeplay && isNet && <th>{t('results.grossDiff')}</th>}
+          <th>{isStrokeplay ? (isNet ? t('results.netDiff') : t('results.diff')) : t('results.points')}</th>
         </tr>
       </thead>
       <tbody>
@@ -87,6 +97,8 @@ export default function ResultsTable({ course, round, players, showThru = true }
             <td>{row.name}</td>
             {showThru && <td>{row.thru}/{course.holeCount}</td>}
             {isStableford && <td>{row.grossTotal ?? '–'}</td>}
+            {isStrokeplay && !isNet && <td>{row.grossTotal ?? '–'}</td>}
+            {isStrokeplay && isNet && <td>{row.secondaryDisplay ?? '–'}</td>}
             <td className="points">{row.display}</td>
           </tr>
         ))}

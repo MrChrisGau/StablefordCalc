@@ -485,6 +485,18 @@ td.points {
   font-size: 0.85rem;
 }
 
+.match-side-scores {
+  flex-basis: 100%;
+  display: flex;
+}
+
+.match-side-score {
+  flex: 1;
+  text-align: center;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .team-assign-row {
   display: flex;
   align-items: center;

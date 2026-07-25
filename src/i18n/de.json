@@ -99,6 +99,9 @@
   "results.thru": "Thru",
   "results.diff": "+/-",
   "results.gross": "Brutto",
+  "results.strokes": "Schläge",
+  "results.grossDiff": "Brutto +/-",
+  "results.netDiff": "Netto +/-",
   "results.points": "Punkte",
 
   "match.handicapSuffix": " (Vorgabe {{n}})",
