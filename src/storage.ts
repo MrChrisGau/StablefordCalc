@@ -26,8 +26,14 @@ export function genId(): string {
   return crypto.randomUUID()
 }
 
+function courseSortKey(course: Course): string {
+  return course.sortKey.trim() || course.name
+}
+
 export function getCourses(): Course[] {
   return load<Course[]>(KEYS.courses, [])
+    .map((c) => ({ ...c, sortKey: c.sortKey ?? '' }))
+    .sort((a, b) => courseSortKey(a).localeCompare(courseSortKey(b), 'de', { sensitivity: 'base', numeric: true }))
 }
 
 export function saveCourses(courses: Course[]): void {

@@ -11,7 +11,7 @@ function emptyHoles(count: number): HoleInfo[] {
 }
 
 function emptyCourse(): Course {
-  return { id: genId(), name: '', holeCount: 18, tees: [], holes: emptyHoles(18) }
+  return { id: genId(), name: '', sortKey: '', holeCount: 18, tees: [], holes: emptyHoles(18) }
 }
 
 function emptyTee(): Tee {
@@ -146,6 +146,16 @@ export default function CoursesPage() {
             onChange={(e) => setEditing({ ...editing, name: e.target.value })}
             placeholder={t('courses.namePlaceholder')}
           />
+        </label>
+
+        <label className="field">
+          <span>{t('courses.sortKey')}</span>
+          <input
+            value={editing.sortKey}
+            onChange={(e) => setEditing({ ...editing, sortKey: e.target.value })}
+            placeholder={editing.name || t('courses.sortKeyPlaceholder')}
+          />
+          <span className="muted">{t('courses.sortKeyHint')}</span>
         </label>
 
         <label className="field">

@@ -18,6 +18,7 @@ export interface HoleInfo {
 export interface Course {
   id: string
   name: string
+  sortKey: string // bestimmt die Reihenfolge in Listen/Export; leer = Name wird verwendet
   holeCount: 9 | 18
   tees: Tee[]
   holes: HoleInfo[]
