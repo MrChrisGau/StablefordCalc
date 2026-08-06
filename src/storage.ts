@@ -6,6 +6,7 @@ const KEYS = {
   rounds: 'stableford:rounds',
   activeRoundId: 'stableford:activeRoundId',
   lang: 'stableford:lang',
+  coursesSyncedOnce: 'stableford:coursesSyncedOnce',
 } as const
 
 function load<T>(key: string, fallback: T): T {
@@ -50,6 +51,17 @@ export function upsertCourse(course: Course): void {
 
 export function deleteCourse(id: string): void {
   saveCourses(getCourses().filter((c) => c.id !== id))
+}
+
+// Markiert, ob dieses Gerät schon mindestens einmal erfolgreich mit Supabase
+// synchronisiert hat — verhindert, dass ein Erstabgleich (leeres Remote)
+// bereits vorhandene lokale Plätze überschreibt (siehe CoursesContext).
+export function getCoursesSyncedOnce(): boolean {
+  return localStorage.getItem(KEYS.coursesSyncedOnce) === 'true'
+}
+
+export function setCoursesSyncedOnce(): void {
+  localStorage.setItem(KEYS.coursesSyncedOnce, 'true')
 }
 
 export function getPlayers(): Player[] {

@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import type { Course, Player } from '../types'
-import { getCourses, getPlayers, upsertCourse, upsertPlayer } from '../storage'
+import { getPlayers, upsertPlayer } from '../storage'
+import { useCourses } from '../lib/CoursesContext'
 import { useTranslation, type Lang } from '../i18n'
 
 interface CourseBackup {
@@ -31,13 +32,14 @@ function download(filename: string, data: unknown) {
 
 export default function DataPage() {
   const { t, lang, setLang } = useTranslation()
+  const { courses, saveCourse } = useCourses()
   const courseFileInputRef = useRef<HTMLInputElement>(null)
   const playerFileInputRef = useRef<HTMLInputElement>(null)
   const [courseMessage, setCourseMessage] = useState('')
   const [playerMessage, setPlayerMessage] = useState('')
 
   function handleExportCourses() {
-    download(`stableford-plaetze-${new Date().toISOString().slice(0, 10)}.json`, { courses: getCourses() } satisfies CourseBackup)
+    download(`stableford-plaetze-${new Date().toISOString().slice(0, 10)}.json`, { courses } satisfies CourseBackup)
   }
 
   function handleExportPlayers() {
@@ -62,7 +64,7 @@ export default function DataPage() {
     }
     const proceed = confirm(t('data.confirmImportCourses', { courses: data.courses.length }))
     if (!proceed) return
-    data.courses.forEach(upsertCourse)
+    data.courses.forEach(saveCourse)
     setCourseMessage(t('data.importSuccessCourses', { courses: data.courses.length }))
   }
 

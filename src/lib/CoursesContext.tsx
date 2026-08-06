@@ -1,6 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Course } from '../types'
-import { deleteCourse, getCourses, saveCourses, upsertCourse } from '../storage'
+import {
+  deleteCourse,
+  getCourses,
+  getCoursesSyncedOnce,
+  saveCourses,
+  setCoursesSyncedOnce,
+  upsertCourse,
+} from '../storage'
 import { ensureAuth } from './supabase'
 import { fetchCourses, pushCourseDelete, pushCourseUpsert, subscribeToCourseChanges } from './courseSync'
 
@@ -28,8 +35,31 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
         .catch((error) => console.error('Platz-Synchronisierung fehlgeschlagen', error))
     }
 
+    // Erster Abgleich auf einem Gerät: lokale Plätze, die noch nie synchronisiert
+    // wurden (z.B. von vor Einführung der Synchronisierung), dürfen nicht durch
+    // ein leeres oder unvollständiges Remote überschrieben werden — sie werden
+    // stattdessen einmalig zu Supabase hochgeladen und mit dem Remote-Stand vereint.
+    async function initialSync() {
+      const remote = await fetchCourses()
+      if (cancelled) return
+      if (getCoursesSyncedOnce()) {
+        saveCourses(remote)
+        setCourses(getCourses())
+        return
+      }
+      const remoteIds = new Set(remote.map((c) => c.id))
+      const localOnly = getCourses().filter((c) => !remoteIds.has(c.id))
+      if (localOnly.length > 0) {
+        await Promise.all(localOnly.map((c) => pushCourseUpsert(c).catch((error) => console.error('Platz-Migration fehlgeschlagen', error))))
+      }
+      setCoursesSyncedOnce()
+      if (cancelled) return
+      saveCourses([...remote, ...localOnly])
+      setCourses(getCourses())
+    }
+
     ensureAuth()
-      .then(resync)
+      .then(initialSync)
       .catch((error) => console.error('Anonyme Anmeldung fehlgeschlagen', error))
 
     const unsubscribe = subscribeToCourseChanges(resync)
