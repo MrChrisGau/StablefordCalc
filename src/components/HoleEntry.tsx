@@ -10,9 +10,10 @@ interface Props {
   hole: HoleInfo
   players: Player[]
   onUpdate: (round: Round) => void
+  editablePlayerIds?: string[] // undefined = alle editierbar (lokale Runde); sonst nur diese Spieler-IDs
 }
 
-export default function HoleEntry({ course, round, hole, players, onUpdate }: Props) {
+export default function HoleEntry({ course, round, hole, players, onUpdate, editablePlayerIds }: Props) {
   const { t } = useTranslation()
   const matchplay = isMatchplay(round.gameMode)
   const teamMatchplay = isTeamMatchplay(round.gameMode)
@@ -100,6 +101,8 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
               </div>
             )
 
+            const editable = !editablePlayerIds || editablePlayerIds.includes(player.id)
+
             if (stableford) {
               return (
                 <div className="entry-row entry-row-multiline" key={player.id}>
@@ -107,23 +110,25 @@ export default function HoleEntry({ course, round, hole, players, onUpdate }: Pr
                     {nameLine}
                     <div className="entry-points">{resultDisplay}</div>
                   </div>
-                  <div className="entry-row-line">
-                    {isPickedUp ? (
-                      <div className="entry-pickedup">{t('holeEntry.pickedUp')}</div>
-                    ) : (
-                      <div className="stepper">
-                        <button onClick={() => setStrokes(player.id, (gross ?? par + 1) - 1)}>−</button>
-                        <span className="stepper-value">{gross ?? '–'}</span>
-                        <button onClick={() => setStrokes(player.id, (gross ?? par - 1) + 1)}>+</button>
-                      </div>
-                    )}
-                    <button
-                      className={`entry-strike-btn ${isPickedUp ? 'active' : ''}`}
-                      onClick={() => setPickedUp(player.id, !isPickedUp)}
-                    >
-                      {t('holeEntry.pickedUp')}
-                    </button>
-                  </div>
+                  {editable && (
+                    <div className="entry-row-line">
+                      {isPickedUp ? (
+                        <div className="entry-pickedup">{t('holeEntry.pickedUp')}</div>
+                      ) : (
+                        <div className="stepper">
+                          <button onClick={() => setStrokes(player.id, (gross ?? par + 1) - 1)}>−</button>
+                          <span className="stepper-value">{gross ?? '–'}</span>
+                          <button onClick={() => setStrokes(player.id, (gross ?? par - 1) + 1)}>+</button>
+                        </div>
+                      )}
+                      <button
+                        className={`entry-strike-btn ${isPickedUp ? 'active' : ''}`}
+                        onClick={() => setPickedUp(player.id, !isPickedUp)}
+                      >
+                        {t('holeEntry.pickedUp')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
             }

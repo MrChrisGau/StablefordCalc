@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Course, HoleInfo, Tee } from '../types'
-import { deleteCourse, genId, getCourses, upsertCourse } from '../storage'
+import { genId } from '../storage'
+import { useCourses } from '../lib/CoursesContext'
 import { totalPar } from '../stableford'
 import DecimalInput from '../components/DecimalInput'
 import OptionalIntInput from '../components/OptionalIntInput'
@@ -27,13 +28,9 @@ function holesGridColumns(teeCount: number): string {
 
 export default function CoursesPage() {
   const { t } = useTranslation()
-  const [courses, setCourses] = useState<Course[]>(getCourses())
+  const { courses, saveCourse, removeCourse } = useCourses()
   const [editing, setEditing] = useState<Course | null>(null)
   const [error, setError] = useState<string>('')
-
-  function refresh() {
-    setCourses(getCourses())
-  }
 
   function startNew() {
     setError('')
@@ -47,8 +44,7 @@ export default function CoursesPage() {
 
   function handleDelete(id: string) {
     if (!confirm(t('courses.confirmDelete'))) return
-    deleteCourse(id)
-    refresh()
+    removeCourse(id)
   }
 
   function setHoleCount(count: 9 | 18) {
@@ -129,9 +125,8 @@ export default function CoursesPage() {
       setError(t('courses.errorNoTee'))
       return
     }
-    upsertCourse(editing)
+    saveCourse(editing)
     setEditing(null)
-    refresh()
   }
 
   if (editing) {

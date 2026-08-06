@@ -11,9 +11,10 @@ interface Props {
   players: Player[]
   onUpdate: (round: Round) => void
   onFinish: () => void
+  editablePlayerIds?: string[]
 }
 
-export default function RoundPlayPage({ round, course, players, onUpdate, onFinish }: Props) {
+export default function RoundPlayPage({ round, course, players, onUpdate, onFinish, editablePlayerIds }: Props) {
   const { t } = useTranslation()
   const hole = course.holes.find((h) => h.number === round.currentHole) ?? course.holes[0]
   const matchplay = isMatchplay(round.gameMode)
@@ -55,7 +56,14 @@ export default function RoundPlayPage({ round, course, players, onUpdate, onFini
         <button className="secondary" onClick={() => changeHole(1)} disabled={round.currentHole >= course.holeCount}>{t('roundPlay.nextHole')}</button>
       </div>
 
-      <HoleEntry course={course} round={round} hole={hole} players={players} onUpdate={onUpdate} />
+      <HoleEntry
+        course={course}
+        round={round}
+        hole={hole}
+        players={players}
+        onUpdate={onUpdate}
+        editablePlayerIds={editablePlayerIds}
+      />
 
       <div className="hole-grid">
         {course.holes.map((h) => (

@@ -67,6 +67,9 @@ export interface Round {
   teams?: [RoundTeam, RoundTeam] // nur bei matchplay_fourball/foursomes
   teamScores?: Record<number, Record<number, number>> // nur bei matchplay_foursomes: teamIndex -> holeNumber -> Schläge
   pickedUp?: Record<string, Record<number, true>> // nur bei stableford: playerId -> holeNumber -> als gestrichen markiert
+  liveRoundId?: string // markiert Round als Live-Runde; supabase live_rounds.id
+  liveCode?: string // Beitritts-Code für Anzeige (Teilen-Screen / Beigetreten-Banner)
+  claimedPlayerId?: string // welcher round.players[].playerId dieses Gerät in einer Live-Runde "besitzt"
 }
 
 export function isSinglesMatchplay(mode: GameMode): boolean {
