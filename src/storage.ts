@@ -100,6 +100,10 @@ export function upsertRound(round: Round): void {
   saveRounds(rounds)
 }
 
+export function deleteRound(id: string): void {
+  saveRounds(getRounds().filter((r) => r.id !== id))
+}
+
 export function getActiveRoundId(): string | null {
   return localStorage.getItem(KEYS.activeRoundId)
 }

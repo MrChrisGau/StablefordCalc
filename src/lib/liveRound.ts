@@ -128,6 +128,12 @@ export async function claimSlot(slotId: string): Promise<boolean> {
   return (data?.length ?? 0) === 1
 }
 
+// Best-effort: nur der Ersteller darf per RLS löschen, für alle anderen ein
+// stiller No-op (z.B. wenn ein Beitretender abbricht, nicht der Host).
+export async function deleteLiveRound(liveRoundId: string): Promise<void> {
+  await supabase.from('live_rounds').delete().eq('id', liveRoundId)
+}
+
 export async function fetchScores(liveRoundId: string): Promise<LiveRoundScoreRow[]> {
   const { data, error } = await supabase.from('live_round_scores').select('*').eq('live_round_id', liveRoundId)
   if (error) throw error

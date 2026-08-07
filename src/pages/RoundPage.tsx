@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Player, Round } from '../types'
 import { isMatchplay } from '../types'
-import { getActiveRoundId, getPlayers, getRounds, setActiveRoundId, upsertRound } from '../storage'
+import { deleteRound, getActiveRoundId, getPlayers, getRounds, setActiveRoundId, upsertRound } from '../storage'
 import { useCourses } from '../lib/CoursesContext'
-import { fetchPlayers } from '../lib/liveRound'
+import { deleteLiveRound, fetchPlayers } from '../lib/liveRound'
 import RoundSetupPage from './RoundSetupPage'
 import RoundPlayPage from './RoundPlayPage'
 import LiveRoundLobbyPage from './LiveRoundLobbyPage'
@@ -70,6 +70,15 @@ export default function RoundPage() {
     handleUpdate({ ...round, claimedPlayerId: playerId })
   }
 
+  function handleCancelLive() {
+    if (!round) return
+    if (round.liveRoundId) deleteLiveRound(round.liveRoundId).catch((error) => console.error('Live-Runde konnte nicht aufgeräumt werden', error))
+    deleteRound(round.id)
+    setActiveRoundId(null)
+    setRound(null)
+    setLiveRoundPlayers([])
+  }
+
   function handleFinish() {
     if (!round) return
     if (!confirm(t('round.confirmFinish'))) return
@@ -95,13 +104,24 @@ export default function RoundPage() {
   }
 
   if (round && course && isLive && effectivePlayers.length === 0) {
-    return <div className="page"><p className="hint">{t('live.loading')}</p></div>
+    return (
+      <div className="page">
+        <p className="hint">{t('live.loading')}</p>
+        <button className="secondary" onClick={handleCancelLive}>{t('common.cancel')}</button>
+      </div>
+    )
   }
 
   if (round && course) {
     if (round.liveRoundId && !round.claimedPlayerId) {
       return (
-        <LiveRoundLobbyPage round={round} course={course} players={effectivePlayers} onClaim={handleClaim} />
+        <LiveRoundLobbyPage
+          round={round}
+          course={course}
+          players={effectivePlayers}
+          onClaim={handleClaim}
+          onCancel={handleCancelLive}
+        />
       )
     }
     if (round.liveRoundId && round.claimedPlayerId) {
