@@ -13,6 +13,7 @@ import { fetchCourses, pushCourseDelete, pushCourseUpsert, subscribeToCourseChan
 
 interface CoursesContextValue {
   courses: Course[]
+  loading: boolean // true bis der erste Sync-Versuch (erfolgreich oder nicht) durch ist
   saveCourse: (course: Course) => void
   removeCourse: (id: string) => void
 }
@@ -21,6 +22,7 @@ const CoursesContext = createContext<CoursesContextValue | null>(null)
 
 export function CoursesProvider({ children }: { children: ReactNode }) {
   const [courses, setCourses] = useState<Course[]>(() => getCourses())
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -61,6 +63,9 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     ensureAuth()
       .then(initialSync)
       .catch((error) => console.error('Anonyme Anmeldung fehlgeschlagen', error))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
 
     const unsubscribe = subscribeToCourseChanges(resync)
     return () => {
@@ -81,7 +86,9 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     pushCourseDelete(id).catch((error) => console.error('Platz-Synchronisierung fehlgeschlagen', error))
   }
 
-  return <CoursesContext.Provider value={{ courses, saveCourse, removeCourse }}>{children}</CoursesContext.Provider>
+  return (
+    <CoursesContext.Provider value={{ courses, loading, saveCourse, removeCourse }}>{children}</CoursesContext.Provider>
+  )
 }
 
 export function useCourses(): CoursesContextValue {

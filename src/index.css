@@ -306,6 +306,18 @@ td.points {
   margin-bottom: 0.75rem;
 }
 
+.live-qr {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.live-qr img {
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.5rem;
+}
+
 .scoreboard {
   background: var(--surface);
   border-radius: 12px;

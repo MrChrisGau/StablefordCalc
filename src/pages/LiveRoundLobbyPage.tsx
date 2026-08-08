@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Course, Player, Round } from '../types'
 import { claimSlot, fetchPlayers, subscribeLiveRound, type LiveRoundPlayerRow } from '../lib/liveRound'
+import LiveShareButton from '../components/LiveShareButton'
 import { useTranslation } from '../i18n'
 
 interface Props {
@@ -63,6 +64,7 @@ export default function LiveRoundLobbyPage({ round, course, players, onClaim, on
     <div className="page">
       <h2>{t('live.lobbyTitle', { course: course.name })}</h2>
       <div className="live-banner">{t('live.banner', { code: round.liveCode ?? '' })}</div>
+      {round.liveCode && <LiveShareButton code={round.liveCode} />}
       <p className="hint">{t('live.lobbyHint')}</p>
       <ul className="list">
         {players.map((player) => {

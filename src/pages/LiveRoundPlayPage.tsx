@@ -1,6 +1,7 @@
 import type { Course, Player, Round } from '../types'
 import { useLiveRoundSync } from '../lib/useLiveRoundSync'
 import RoundPlayPage from './RoundPlayPage'
+import LiveShareButton from '../components/LiveShareButton'
 import { useTranslation } from '../i18n'
 
 interface Props {
@@ -22,6 +23,7 @@ export default function LiveRoundPlayPage({ round, course, players, onUpdate, on
       <div className="live-banner">
         {t(isSpectator ? 'live.spectatorBanner' : 'live.banner', { code: round.liveCode ?? '' })}
       </div>
+      {round.liveCode && <LiveShareButton code={round.liveCode} />}
       <RoundPlayPage
         round={round}
         course={course}

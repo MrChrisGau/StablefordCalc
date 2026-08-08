@@ -3,7 +3,7 @@ import type { Player, Round } from '../types'
 import { isMatchplay } from '../types'
 import { deleteRound, getActiveRoundId, getPlayers, getRounds, setActiveRoundId, upsertRound } from '../storage'
 import { useCourses } from '../lib/CoursesContext'
-import { deleteLiveRound, fetchPlayers } from '../lib/liveRound'
+import { buildRoundFromLiveRound, deleteLiveRound, fetchLiveRoundByCode, fetchPlayers, mapPlayerRowsToPlayers } from '../lib/liveRound'
 import RoundSetupPage from './RoundSetupPage'
 import RoundPlayPage from './RoundPlayPage'
 import LiveRoundLobbyPage from './LiveRoundLobbyPage'
@@ -15,7 +15,7 @@ import { useTranslation } from '../i18n'
 
 export default function RoundPage() {
   const { t } = useTranslation()
-  const { courses } = useCourses()
+  const { courses, loading: coursesLoading } = useCourses()
   const players = getPlayers()
 
   const [round, setRound] = useState<Round | null>(() => {
@@ -26,28 +26,61 @@ export default function RoundPage() {
   const [finished, setFinished] = useState<Round | null>(null)
   const [liveRoundPlayers, setLiveRoundPlayers] = useState<Player[]>([])
   const [joining, setJoining] = useState(false)
+  const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null)
+  const [autoJoinError, setAutoJoinError] = useState('')
 
   const activeCourseId = round?.courseId ?? finished?.courseId
   const course = useMemo(() => courses.find((c) => c.id === activeCourseId), [courses, activeCourseId])
   const isLive = !!(round ?? finished)?.liveRoundId
   const effectivePlayers = isLive ? liveRoundPlayers : players
 
+  // Beitritts-Link (?join=CODE, z.B. aus Teilen/QR-Code) einmalig aus der URL lesen.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('join')
+    if (!code) return
+    window.history.replaceState(null, '', window.location.pathname)
+    setPendingJoinCode(code)
+  }, [])
+
+  // Sobald ein Beitritts-Code aussteht und die Platzliste geladen ist (wichtig auf
+  // einem brandneuen Gerät ohne lokalen Cache), automatisch der Runde beitreten.
+  useEffect(() => {
+    if (!pendingJoinCode || round || coursesLoading) return
+    let cancelled = false
+    setAutoJoinError('')
+    fetchLiveRoundByCode(pendingJoinCode)
+      .then((result) => {
+        if (cancelled) return
+        if (!result) {
+          setAutoJoinError(t('live.joinNotFound'))
+          return
+        }
+        const foundCourse = courses.find((c) => c.id === result.round.course_id)
+        if (!foundCourse) {
+          setAutoJoinError(t('live.joinNoCourse'))
+          return
+        }
+        handleStart(buildRoundFromLiveRound(result.round, result.players), mapPlayerRowsToPlayers(result.players))
+      })
+      .catch((error) => {
+        console.error('Automatischer Beitritt fehlgeschlagen', error)
+        if (!cancelled) setAutoJoinError(t('live.joinError'))
+      })
+      .finally(() => {
+        if (!cancelled) setPendingJoinCode(null)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingJoinCode, coursesLoading, round])
+
   // Nach einem Reload existiert die Live-Runde nur noch als lokal gespeicherter
   // Round, die Spieler-Snapshots (liveRoundPlayers) müssen dann neu geladen werden.
   useEffect(() => {
     if (!round?.liveRoundId || liveRoundPlayers.length > 0) return
     fetchPlayers(round.liveRoundId)
-      .then((rows) =>
-        setLiveRoundPlayers(
-          rows.map((r) => ({
-            id: r.player_id,
-            firstName: r.first_name,
-            lastName: r.last_name,
-            handicap: r.handicap,
-            gender: r.gender,
-          })),
-        ),
-      )
+      .then((rows) => setLiveRoundPlayers(mapPlayerRowsToPlayers(rows)))
       .catch((error) => console.error('Spielerliste konnte nicht geladen werden', error))
   }, [round?.liveRoundId, liveRoundPlayers.length])
 
@@ -104,6 +137,14 @@ export default function RoundPage() {
           <ResultsTable course={course} round={finished} players={effectivePlayers} />
         )}
         <button className="primary" onClick={() => setFinished(null)}>{t('round.newRound')}</button>
+      </div>
+    )
+  }
+
+  if (!round && pendingJoinCode) {
+    return (
+      <div className="page">
+        <p className="hint">{t('live.loading')}</p>
       </div>
     )
   }
@@ -166,6 +207,7 @@ export default function RoundPage() {
     <div>
       <RoundSetupPage courses={courses} players={players} onStart={handleStart} />
       <div className="page">
+        {autoJoinError && <p className="error">{autoJoinError}</p>}
         <button className="secondary" onClick={() => setJoining(true)}>{t('roundSetup.joinLive')}</button>
       </div>
     </div>

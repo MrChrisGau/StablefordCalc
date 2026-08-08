@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { Course, Player, Round } from '../types'
-import { genId } from '../storage'
-import { fetchLiveRoundByCode } from '../lib/liveRound'
+import { buildRoundFromLiveRound, fetchLiveRoundByCode, mapPlayerRowsToPlayers } from '../lib/liveRound'
 import { useTranslation } from '../i18n'
 
 interface Props {
@@ -31,25 +30,8 @@ export default function JoinLiveRoundPage({ courses, onJoin, onCancel }: Props) 
         setError(t('live.joinNoCourse'))
         return
       }
-      const players: Player[] = result.players.map((p) => ({
-        id: p.player_id,
-        firstName: p.first_name,
-        lastName: p.last_name,
-        handicap: p.handicap,
-        gender: p.gender,
-      }))
-      const round: Round = {
-        id: genId(),
-        courseId: course.id,
-        date: new Date().toISOString(),
-        players: result.players.map((p) => ({ playerId: p.player_id, teeId: p.tee_id })),
-        scores: {},
-        status: 'in_progress',
-        currentHole: 1,
-        gameMode: result.round.game_mode,
-        liveRoundId: result.round.id,
-        liveCode: result.round.code,
-      }
+      const players = mapPlayerRowsToPlayers(result.players)
+      const round = buildRoundFromLiveRound(result.round, result.players)
       onJoin(round, players)
     } catch (err) {
       setError(t('live.joinError'))

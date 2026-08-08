@@ -1,5 +1,6 @@
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import type { Course, GameMode, Player, Round } from '../types'
+import { genId } from '../storage'
 import { getUserId, supabase } from './supabase'
 
 export interface LiveRoundRow {
@@ -113,6 +114,32 @@ export async function fetchLiveRoundByCode(
   if (playersError) throw playersError
 
   return { round: round as LiveRoundRow, players: (players ?? []) as LiveRoundPlayerRow[] }
+}
+
+export function mapPlayerRowsToPlayers(rows: LiveRoundPlayerRow[]): Player[] {
+  return rows.map((r) => ({
+    id: r.player_id,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    handicap: r.handicap,
+    gender: r.gender,
+  }))
+}
+
+/** Baut aus einer per Code gefundenen Live-Runde ein lokales Round-Objekt zum Beitreten. */
+export function buildRoundFromLiveRound(round: LiveRoundRow, players: LiveRoundPlayerRow[]): Round {
+  return {
+    id: genId(),
+    courseId: round.course_id,
+    date: new Date().toISOString(),
+    players: players.map((p) => ({ playerId: p.player_id, teeId: p.tee_id })),
+    scores: {},
+    status: 'in_progress',
+    currentHole: 1,
+    gameMode: round.game_mode,
+    liveRoundId: round.id,
+    liveCode: round.code,
+  }
 }
 
 /** Versucht einen Spieler-Slot zu beanspruchen. Gibt false zurück, wenn ein anderes Gerät schneller war. */
