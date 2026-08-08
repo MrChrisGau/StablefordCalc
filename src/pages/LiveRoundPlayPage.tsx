@@ -14,11 +14,14 @@ interface Props {
 export default function LiveRoundPlayPage({ round, course, players, onUpdate, onFinish }: Props) {
   const { t } = useTranslation()
   const handleUpdate = useLiveRoundSync(round, onUpdate)
+  const isSpectator = !round.claimedPlayerId
   const editablePlayerIds = round.claimedPlayerId ? [round.claimedPlayerId] : []
 
   return (
     <div>
-      <div className="live-banner">{t('live.banner', { code: round.liveCode ?? '' })}</div>
+      <div className="live-banner">
+        {t(isSpectator ? 'live.spectatorBanner' : 'live.banner', { code: round.liveCode ?? '' })}
+      </div>
       <RoundPlayPage
         round={round}
         course={course}
@@ -26,6 +29,7 @@ export default function LiveRoundPlayPage({ round, course, players, onUpdate, on
         onUpdate={handleUpdate}
         onFinish={onFinish}
         editablePlayerIds={editablePlayerIds}
+        isSpectator={isSpectator}
       />
     </div>
   )

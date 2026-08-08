@@ -70,6 +70,7 @@ export interface Round {
   liveRoundId?: string // markiert Round als Live-Runde; supabase live_rounds.id
   liveCode?: string // Beitritts-Code für Anzeige (Teilen-Screen / Beigetreten-Banner)
   claimedPlayerId?: string // welcher round.players[].playerId dieses Gerät in einer Live-Runde "besitzt"
+  spectating?: true // Gerät schaut nur zu, ohne einen Spieler zu beanspruchen
 }
 
 export function isSinglesMatchplay(mode: GameMode): boolean {

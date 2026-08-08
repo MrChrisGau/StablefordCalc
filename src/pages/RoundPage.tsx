@@ -70,6 +70,11 @@ export default function RoundPage() {
     handleUpdate({ ...round, claimedPlayerId: playerId })
   }
 
+  function handleWatch() {
+    if (!round) return
+    handleUpdate({ ...round, spectating: true })
+  }
+
   function handleCancelLive() {
     if (!round) return
     if (round.liveRoundId) deleteLiveRound(round.liveRoundId).catch((error) => console.error('Live-Runde konnte nicht aufgeräumt werden', error))
@@ -113,18 +118,19 @@ export default function RoundPage() {
   }
 
   if (round && course) {
-    if (round.liveRoundId && !round.claimedPlayerId) {
+    if (round.liveRoundId && !round.claimedPlayerId && !round.spectating) {
       return (
         <LiveRoundLobbyPage
           round={round}
           course={course}
           players={effectivePlayers}
           onClaim={handleClaim}
+          onWatch={handleWatch}
           onCancel={handleCancelLive}
         />
       )
     }
-    if (round.liveRoundId && round.claimedPlayerId) {
+    if (round.liveRoundId && (round.claimedPlayerId || round.spectating)) {
       return (
         <LiveRoundPlayPage
           round={round}

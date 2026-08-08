@@ -12,9 +12,18 @@ interface Props {
   onUpdate: (round: Round) => void
   onFinish: () => void
   editablePlayerIds?: string[]
+  isSpectator?: boolean
 }
 
-export default function RoundPlayPage({ round, course, players, onUpdate, onFinish, editablePlayerIds }: Props) {
+export default function RoundPlayPage({
+  round,
+  course,
+  players,
+  onUpdate,
+  onFinish,
+  editablePlayerIds,
+  isSpectator,
+}: Props) {
   const { t } = useTranslation()
   const hole = course.holes.find((h) => h.number === round.currentHole) ?? course.holes[0]
   const matchplay = isMatchplay(round.gameMode)
@@ -79,7 +88,7 @@ export default function RoundPlayPage({ round, course, players, onUpdate, onFini
 
       <div className="actions">
         <button className="danger" onClick={onFinish}>
-          {allHolesEntered ? t('roundPlay.finish') : t('roundPlay.finishEarly')}
+          {isSpectator ? t('live.stopWatching') : allHolesEntered ? t('roundPlay.finish') : t('roundPlay.finishEarly')}
         </button>
       </div>
     </div>

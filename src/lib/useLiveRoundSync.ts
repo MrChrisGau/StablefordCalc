@@ -16,6 +16,10 @@ interface SlotInfo {
  * Navigation bleibt rein lokal. Eingehende Realtime-Events für fremde Slots
  * werden gemerged; Echos des eigenen Slots werden ignoriert (das Gerät bleibt
  * für seinen eigenen Slot autoritativ).
+ *
+ * Ohne `claimedPlayerId` (Zuschauer-Modus) läuft dieselbe Logik rein lesend:
+ * es gibt keinen eigenen Slot, also werden alle eingehenden Scores gemerged
+ * und nie etwas gepusht.
  */
 export function useLiveRoundSync(round: Round, onLocalUpdate: (round: Round) => void): (updated: Round) => void {
   const roundRef = useRef(round)
@@ -30,7 +34,7 @@ export function useLiveRoundSync(round: Round, onLocalUpdate: (round: Round) => 
   const claimedPlayerId = round.claimedPlayerId
 
   useEffect(() => {
-    if (!liveRoundId || !claimedPlayerId) return
+    if (!liveRoundId) return
     let cancelled = false
     slotInfoRef.current = null
 

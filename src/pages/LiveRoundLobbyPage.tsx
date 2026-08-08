@@ -8,10 +8,11 @@ interface Props {
   course: Course
   players: Player[]
   onClaim: (playerId: string) => void
+  onWatch: () => void
   onCancel: () => void
 }
 
-export default function LiveRoundLobbyPage({ round, course, players, onClaim, onCancel }: Props) {
+export default function LiveRoundLobbyPage({ round, course, players, onClaim, onWatch, onCancel }: Props) {
   const { t } = useTranslation()
   const [slots, setSlots] = useState<LiveRoundPlayerRow[]>([])
   const [claiming, setClaiming] = useState<string | null>(null)
@@ -82,7 +83,10 @@ export default function LiveRoundLobbyPage({ round, course, players, onClaim, on
         })}
       </ul>
       {error && <p className="error">{error}</p>}
-      <button className="secondary" onClick={onCancel}>{t('common.cancel')}</button>
+      <div className="stack">
+        <button className="secondary" onClick={onWatch}>{t('live.watchButton')}</button>
+        <button className="secondary" onClick={onCancel}>{t('common.cancel')}</button>
+      </div>
     </div>
   )
 }

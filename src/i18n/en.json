@@ -99,10 +99,13 @@
   "round.confirmFinish": "Finish the round now?",
 
   "live.banner": "Live round · Code {{code}}",
+  "live.spectatorBanner": "Spectator mode · Code {{code}}",
   "live.loading": "Loading live round …",
   "live.lobbyTitle": "Join: {{course}}",
   "live.lobbyHint": "Pick which player you are. Others do the same on their own device.",
   "live.pickMe": "That's me",
+  "live.watchButton": "Just watch",
+  "live.stopWatching": "Stop watching",
   "live.claimed": "Taken",
   "live.claimTaken": "Another device just picked this player.",
   "live.claimError": "Selection failed. Please try again.",

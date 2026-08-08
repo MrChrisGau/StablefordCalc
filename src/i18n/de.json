@@ -99,10 +99,13 @@
   "round.confirmFinish": "Runde jetzt abschließen?",
 
   "live.banner": "Live-Runde · Code {{code}}",
+  "live.spectatorBanner": "Zuschauer-Modus · Code {{code}}",
   "live.loading": "Live-Runde wird geladen …",
   "live.lobbyTitle": "Beitreten: {{course}}",
   "live.lobbyHint": "Wähle, welcher Spieler du bist. Andere Spieler tun das auf ihrem eigenen Gerät.",
   "live.pickMe": "Das bin ich",
+  "live.watchButton": "Nur zuschauen",
+  "live.stopWatching": "Zuschauen beenden",
   "live.claimed": "Vergeben",
   "live.claimTaken": "Dieser Spieler wurde gerade von einem anderen Gerät gewählt.",
   "live.claimError": "Auswahl fehlgeschlagen. Bitte erneut versuchen.",
