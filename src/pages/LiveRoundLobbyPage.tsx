@@ -37,9 +37,20 @@ export default function LiveRoundLobbyPage({ round, course, players, onClaim, on
       onPlayerChange: refresh,
       onRoundChange: () => {},
     })
+
+    // Wie bei useLiveRoundSync: Realtime kann still hängen bleiben, daher
+    // zusätzlich periodisch und beim Zurückkehren in den Vordergrund auffrischen.
+    const pollInterval = setInterval(refresh, 10000)
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       cancelled = true
       unsubscribe()
+      clearInterval(pollInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [round.liveRoundId])
 

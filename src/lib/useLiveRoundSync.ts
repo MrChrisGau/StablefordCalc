@@ -59,6 +59,18 @@ export function useLiveRoundSync(round: Round, onLocalUpdate: (round: Round) => 
       if (changed) onLocalUpdateRef.current({ ...roundRef.current, scores, pickedUp })
     }
 
+    async function resyncFromServer() {
+      const info = slotInfoRef.current
+      if (!info) return
+      try {
+        const scores = await fetchScores(liveRoundId!)
+        if (cancelled) return
+        mergeScores(scores, info, true)
+      } catch (error) {
+        console.error('Live-Runde konnte nicht aktualisiert werden', error)
+      }
+    }
+
     async function init() {
       const playerRows = await fetchPlayers(liveRoundId!)
       if (cancelled) return
@@ -88,9 +100,22 @@ export function useLiveRoundSync(round: Round, onLocalUpdate: (round: Round) => 
       onRoundChange: () => {},
     })
 
+    // Die Realtime-Verbindung kann auf Mobilgeräten (Sperrbildschirm, Hintergrund,
+    // Netzwechsel) still hängen bleiben, ohne einen Fehler zu werfen. Ein
+    // periodischer Poll plus ein sofortiger Resync beim Zurückkehren in den
+    // Vordergrund heilen das selbstständig, unabhängig vom tatsächlichen
+    // Verbindungsstatus des Realtime-Kanals.
+    const pollInterval = setInterval(resyncFromServer, 10000)
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') resyncFromServer()
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       cancelled = true
       unsubscribe()
+      clearInterval(pollInterval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       for (const timer of Object.values(debounceTimers.current)) clearTimeout(timer)
       debounceTimers.current = {}
     }

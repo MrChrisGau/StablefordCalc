@@ -110,25 +110,28 @@ export default function HoleEntry({ course, round, hole, players, onUpdate, edit
                     {nameLine}
                     <div className="entry-points">{resultDisplay}</div>
                   </div>
-                  {editable && (
-                    <div className="entry-row-line">
+                  <div className="entry-row-line">
+                    <div className="entry-value-slot">
                       {isPickedUp ? (
                         <div className="entry-pickedup">{t('holeEntry.pickedUp')}</div>
-                      ) : (
+                      ) : editable ? (
                         <div className="stepper">
                           <button onClick={() => setStrokes(player.id, (gross ?? par + 1) - 1)}>−</button>
                           <span className="stepper-value">{gross ?? '–'}</span>
                           <button onClick={() => setStrokes(player.id, (gross ?? par - 1) + 1)}>+</button>
                         </div>
+                      ) : (
+                        <div className="entry-readonly-value">{gross ?? '–'}</div>
                       )}
-                      <button
-                        className={`entry-strike-btn ${isPickedUp ? 'active' : ''}`}
-                        onClick={() => setPickedUp(player.id, !isPickedUp)}
-                      >
-                        {t('holeEntry.pickedUp')}
-                      </button>
                     </div>
-                  )}
+                    <button
+                      className={`entry-strike-btn ${isPickedUp ? 'active' : ''} ${editable ? '' : 'entry-strike-btn-hidden'}`}
+                      onClick={() => setPickedUp(player.id, !isPickedUp)}
+                      disabled={!editable}
+                    >
+                      {t('holeEntry.pickedUp')}
+                    </button>
+                  </div>
                 </div>
               )
             }

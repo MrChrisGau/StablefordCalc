@@ -394,6 +394,20 @@ td.points {
   font-weight: 700;
 }
 
+.entry-readonly-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Hält Stepper und schreibgeschützten Wert im selben virtuellen Spaltenplatz,
+   egal ob der "Gestrichen"-Button (rechts) sichtbar ist oder nicht. */
+.entry-value-slot {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
 .entry-points {
   width: 4.5rem;
   text-align: right;
@@ -414,7 +428,6 @@ td.points {
 }
 
 .entry-pickedup {
-  flex: 1;
   font-style: italic;
   color: var(--muted);
 }
@@ -425,6 +438,10 @@ td.points {
   font-size: 0.8rem;
   background: var(--surface-2);
   color: var(--muted);
+}
+
+.entry-strike-btn-hidden {
+  visibility: hidden;
 }
 
 .entry-strike-btn.active {
