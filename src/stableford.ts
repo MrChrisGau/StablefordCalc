@@ -40,9 +40,9 @@ export interface HoleResult {
   pickedUp: boolean
 }
 
-/** Bruttoschläge für ein gestrichenes Loch: Netto-Doppelbogey plus ein Schlag. */
+/** Bruttoschläge für ein gestrichenes Loch: Netto-Doppelbogey (Par + Vorgabeschläge + 2), gemäß DGV/WHS-Regeln. */
 export function pickedUpGross(par: number, strokesReceived: number): number {
-  return par + strokesReceived + 3
+  return par + strokesReceived + 2
 }
 
 export function computeHoleResults(
