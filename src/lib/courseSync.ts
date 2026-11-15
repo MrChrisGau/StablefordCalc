@@ -1,7 +1,8 @@
+import { ClientResponseError } from 'pocketbase'
 import type { Course } from '../types'
-import { supabase } from './supabase'
+import { ensureAuth, pb } from './pocketbase'
 
-interface CourseRow {
+interface CourseRecord {
   id: string
   name: string
   sort_key: string
@@ -10,20 +11,19 @@ interface CourseRow {
   holes: Course['holes']
 }
 
-function mapRowToCourse(row: CourseRow): Course {
+function mapRecordToCourse(record: CourseRecord): Course {
   return {
-    id: row.id,
-    name: row.name,
-    sortKey: row.sort_key,
-    holeCount: row.hole_count as 9 | 18,
-    tees: row.tees,
-    holes: row.holes,
+    id: record.id,
+    name: record.name,
+    sortKey: record.sort_key,
+    holeCount: record.hole_count as 9 | 18,
+    tees: record.tees,
+    holes: record.holes,
   }
 }
 
-function mapCourseToRow(course: Course): CourseRow {
+function mapCourseToFields(course: Course) {
   return {
-    id: course.id,
     name: course.name,
     sort_key: course.sortKey,
     hole_count: course.holeCount,
@@ -33,27 +33,39 @@ function mapCourseToRow(course: Course): CourseRow {
 }
 
 export async function fetchCourses(): Promise<Course[]> {
-  const { data, error } = await supabase.from('courses').select('*')
-  if (error) throw error
-  return (data as CourseRow[]).map(mapRowToCourse)
+  const records = await pb.collection('courses').getFullList<CourseRecord>()
+  return records.map(mapRecordToCourse)
 }
 
 export function subscribeToCourseChanges(onChange: () => void): () => void {
-  const channel = supabase
-    .channel('courses-sync')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, onChange)
-    .subscribe()
+  const unsubscribe = pb
+    .collection('courses')
+    .subscribe('*', onChange)
+    .catch((error) => {
+      console.error('Platz-Echtzeitverbindung fehlgeschlagen', error)
+      return () => {}
+    })
   return () => {
-    supabase.removeChannel(channel)
+    unsubscribe.then((fn) => fn())
   }
 }
 
 export async function pushCourseUpsert(course: Course): Promise<void> {
-  const { error } = await supabase.from('courses').upsert(mapCourseToRow(course))
-  if (error) throw error
+  await ensureAuth()
+  const collection = pb.collection('courses')
+  try {
+    await collection.update(course.id, mapCourseToFields(course))
+  } catch (error) {
+    if (!(error instanceof ClientResponseError) || error.status !== 404) throw error
+    await collection.create({ id: course.id, ...mapCourseToFields(course) })
+  }
 }
 
 export async function pushCourseDelete(id: string): Promise<void> {
-  const { error } = await supabase.from('courses').delete().eq('id', id)
-  if (error) throw error
+  await ensureAuth()
+  try {
+    await pb.collection('courses').delete(id)
+  } catch (error) {
+    if (!(error instanceof ClientResponseError) || error.status !== 404) throw error
+  }
 }

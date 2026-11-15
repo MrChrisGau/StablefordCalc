@@ -23,3 +23,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# PocketBase-Daten (lokal/Server)
+server/pocketbase/pb_data

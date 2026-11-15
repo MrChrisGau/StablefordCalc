@@ -1,7 +1,7 @@
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { ClientResponseError, type RecordModel } from 'pocketbase'
 import type { Course, GameMode, Player, Round } from '../types'
 import { genId } from '../storage'
-import { getUserId, supabase } from './supabase'
+import { ensureAuth, getUserId, pb } from './pocketbase'
 
 export interface LiveRoundRow {
   id: string
@@ -35,6 +35,49 @@ export interface LiveRoundScoreRow {
   updated_at: string
 }
 
+function toRoundRow(r: RecordModel): LiveRoundRow {
+  return {
+    id: r.id,
+    code: r.code,
+    course_id: r.course_id,
+    game_mode: r.game_mode,
+    status: r.status || 'in_progress',
+    created_by: r.created_by,
+    created_at: r.created,
+  }
+}
+
+function toPlayerRow(r: RecordModel): LiveRoundPlayerRow {
+  return {
+    id: r.id,
+    live_round_id: r.live_round_id,
+    player_id: r.player_id,
+    first_name: r.first_name,
+    last_name: r.last_name,
+    handicap: r.handicap,
+    gender: r.gender,
+    tee_id: r.tee_id,
+    claimed_by: r.claimed_by || null,
+    claimed_at: r.claimed_at || null,
+  }
+}
+
+// PocketBase kennt kein NULL für Zahlen: 0 steht für "kein Ergebnis" (Schläge sind immer >= 1).
+function toScoreRow(r: RecordModel): LiveRoundScoreRow {
+  return {
+    live_round_id: r.live_round_id,
+    slot_id: r.slot_id,
+    hole_number: r.hole_number,
+    strokes: r.strokes || null,
+    picked_up: !!r.picked_up,
+    updated_at: r.updated,
+  }
+}
+
+function isStatus(error: unknown, ...statuses: number[]): boolean {
+  return error instanceof ClientResponseError && statuses.includes(error.status)
+}
+
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // ohne verwechselbare Zeichen (0/O, 1/I)
 
 function randomCode(length = 6): string {
@@ -52,68 +95,65 @@ export async function createLiveRound(
 ): Promise<{ liveRoundId: string; code: string }> {
   const uid = await getUserId()
 
-  let roundRow: LiveRoundRow | null = null
+  let roundRecord: RecordModel | null = null
   let lastError: unknown = null
-  for (let attempt = 0; attempt < 5 && !roundRow; attempt++) {
-    const code = randomCode()
-    const { data, error } = await supabase
-      .from('live_rounds')
-      .insert({ code, course_id: course.id, game_mode: round.gameMode, created_by: uid })
-      .select()
-      .single()
-    if (!error) {
-      roundRow = data as LiveRoundRow
-    } else if (error.code === '23505') {
-      lastError = error
-      continue // Code bereits vergeben, neu versuchen
-    } else {
+  for (let attempt = 0; attempt < 5 && !roundRecord; attempt++) {
+    try {
+      roundRecord = await pb.collection('live_rounds').create({
+        code: randomCode(),
+        course_id: course.id,
+        game_mode: round.gameMode,
+        status: 'in_progress',
+        created_by: uid,
+      })
+    } catch (error) {
+      // Code bereits vergeben: neu versuchen
+      if (isStatus(error, 400) && (error as ClientResponseError).response?.data?.code?.code === 'validation_not_unique') {
+        lastError = error
+        continue
+      }
       throw error
     }
   }
-  if (!roundRow) throw lastError ?? new Error('Live-Runde konnte nicht erstellt werden')
+  if (!roundRecord) throw lastError ?? new Error('Live-Runde konnte nicht erstellt werden')
 
-  const playerRows = round.players.map((rp) => {
-    const player = players.find((p) => p.id === rp.playerId)!
-    return {
-      live_round_id: roundRow!.id,
-      player_id: player.id,
-      first_name: player.firstName,
-      last_name: player.lastName,
-      handicap: player.handicap,
-      gender: player.gender,
-      tee_id: rp.teeId,
-    }
-  })
-  const { error: playersError } = await supabase.from('live_round_players').insert(playerRows)
-  if (playersError) throw playersError
+  await Promise.all(
+    round.players.map((rp) => {
+      const player = players.find((p) => p.id === rp.playerId)!
+      return pb.collection('live_round_players').create({
+        live_round_id: roundRecord.id,
+        player_id: player.id,
+        first_name: player.firstName,
+        last_name: player.lastName,
+        handicap: player.handicap,
+        gender: player.gender,
+        tee_id: rp.teeId,
+      })
+    }),
+  )
 
-  return { liveRoundId: roundRow.id, code: roundRow.code }
+  return { liveRoundId: roundRecord.id, code: roundRecord.code }
 }
 
 export async function fetchPlayers(liveRoundId: string): Promise<LiveRoundPlayerRow[]> {
-  const { data, error } = await supabase.from('live_round_players').select('*').eq('live_round_id', liveRoundId)
-  if (error) throw error
-  return data as LiveRoundPlayerRow[]
+  const records = await pb
+    .collection('live_round_players')
+    .getFullList({ filter: pb.filter('live_round_id = {:id}', { id: liveRoundId }) })
+  return records.map(toPlayerRow)
 }
 
 export async function fetchLiveRoundByCode(
   code: string,
 ): Promise<{ round: LiveRoundRow; players: LiveRoundPlayerRow[] } | null> {
-  const { data: round, error: roundError } = await supabase
-    .from('live_rounds')
-    .select('*')
-    .eq('code', code.toUpperCase())
-    .maybeSingle()
-  if (roundError) throw roundError
-  if (!round) return null
-
-  const { data: players, error: playersError } = await supabase
-    .from('live_round_players')
-    .select('*')
-    .eq('live_round_id', round.id)
-  if (playersError) throw playersError
-
-  return { round: round as LiveRoundRow, players: (players ?? []) as LiveRoundPlayerRow[] }
+  let record: RecordModel
+  try {
+    record = await pb.collection('live_rounds').getFirstListItem(pb.filter('code = {:code}', { code: code.toUpperCase() }))
+  } catch (error) {
+    if (isStatus(error, 404)) return null
+    throw error
+  }
+  const players = await fetchPlayers(record.id)
+  return { round: toRoundRow(record), players }
 }
 
 export function mapPlayerRowsToPlayers(rows: LiveRoundPlayerRow[]): Player[] {
@@ -145,26 +185,32 @@ export function buildRoundFromLiveRound(round: LiveRoundRow, players: LiveRoundP
 /** Versucht einen Spieler-Slot zu beanspruchen. Gibt false zurück, wenn ein anderes Gerät schneller war. */
 export async function claimSlot(slotId: string): Promise<boolean> {
   const uid = await getUserId()
-  const { data, error } = await supabase
-    .from('live_round_players')
-    .update({ claimed_by: uid, claimed_at: new Date().toISOString() })
-    .eq('id', slotId)
-    .is('claimed_by', null)
-    .select()
-  if (error) throw error
-  return (data?.length ?? 0) === 1
+  try {
+    await pb.collection('live_round_players').update(slotId, { claimed_by: uid, claimed_at: new Date().toISOString() })
+    return true
+  } catch (error) {
+    // Die Update-Regel lässt nur freie (oder eigene) Slots zu; sonst antwortet PocketBase mit 404/403.
+    if (isStatus(error, 403, 404)) return false
+    throw error
+  }
 }
 
-// Best-effort: nur der Ersteller darf per RLS löschen, für alle anderen ein
+// Best-effort: nur der Ersteller darf per Regel löschen, für alle anderen ein
 // stiller No-op (z.B. wenn ein Beitretender abbricht, nicht der Host).
 export async function deleteLiveRound(liveRoundId: string): Promise<void> {
-  await supabase.from('live_rounds').delete().eq('id', liveRoundId)
+  try {
+    await ensureAuth()
+    await pb.collection('live_rounds').delete(liveRoundId)
+  } catch {
+    // bewusst ignoriert
+  }
 }
 
 export async function fetchScores(liveRoundId: string): Promise<LiveRoundScoreRow[]> {
-  const { data, error } = await supabase.from('live_round_scores').select('*').eq('live_round_id', liveRoundId)
-  if (error) throw error
-  return data as LiveRoundScoreRow[]
+  const records = await pb
+    .collection('live_round_scores')
+    .getFullList({ filter: pb.filter('live_round_id = {:id}', { id: liveRoundId }) })
+  return records.map(toScoreRow)
 }
 
 export async function pushScore(
@@ -174,41 +220,63 @@ export async function pushScore(
   strokes: number | null,
   pickedUp: boolean,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('live_round_scores')
-    .upsert(
-      { live_round_id: liveRoundId, slot_id: slotId, hole_number: holeNumber, strokes, picked_up: pickedUp },
-      { onConflict: 'slot_id,hole_number' },
-    )
-  if (error) throw error
+  await ensureAuth()
+  const collection = pb.collection('live_round_scores')
+  const fields = { strokes: strokes ?? 0, picked_up: pickedUp }
+  const filter = pb.filter('slot_id = {:slot} && hole_number = {:hole}', { slot: slotId, hole: holeNumber })
+
+  async function updateExisting(): Promise<boolean> {
+    try {
+      const existing = await collection.getFirstListItem(filter)
+      await collection.update(existing.id, fields)
+      return true
+    } catch (error) {
+      if (isStatus(error, 404)) return false
+      throw error
+    }
+  }
+
+  if (await updateExisting()) return
+  try {
+    await collection.create({ live_round_id: liveRoundId, slot_id: slotId, hole_number: holeNumber, ...fields })
+  } catch (error) {
+    // Parallel angelegt (Unique-Index auf slot_id+hole_number): stattdessen aktualisieren.
+    if (isStatus(error, 400) && (await updateExisting())) return
+    throw error
+  }
+}
+
+export interface LiveRoundEvent<T> {
+  action: string // create | update | delete
+  row: T
 }
 
 export interface LiveRoundHandlers {
-  onScoreChange: (payload: RealtimePostgresChangesPayload<LiveRoundScoreRow>) => void
-  onPlayerChange: (payload: RealtimePostgresChangesPayload<LiveRoundPlayerRow>) => void
-  onRoundChange: (payload: RealtimePostgresChangesPayload<LiveRoundRow>) => void
+  onScoreChange: (event: LiveRoundEvent<LiveRoundScoreRow>) => void
+  onPlayerChange: (event: LiveRoundEvent<LiveRoundPlayerRow>) => void
+  onRoundChange: (event: LiveRoundEvent<LiveRoundRow>) => void
 }
 
 export function subscribeLiveRound(liveRoundId: string, handlers: LiveRoundHandlers): () => void {
-  const channel = supabase
-    .channel(`live-round-${liveRoundId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'live_round_scores', filter: `live_round_id=eq.${liveRoundId}` },
-      handlers.onScoreChange,
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'live_round_players', filter: `live_round_id=eq.${liveRoundId}` },
-      handlers.onPlayerChange,
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'live_rounds', filter: `id=eq.${liveRoundId}` },
-      handlers.onRoundChange,
-    )
-    .subscribe()
+  const unsubscribes = Promise.all([
+    pb.collection('live_round_scores').subscribe(
+      '*',
+      (e) => handlers.onScoreChange({ action: e.action, row: toScoreRow(e.record) }),
+      { filter: pb.filter('live_round_id = {:id}', { id: liveRoundId }) },
+    ),
+    pb.collection('live_round_players').subscribe(
+      '*',
+      (e) => handlers.onPlayerChange({ action: e.action, row: toPlayerRow(e.record) }),
+      { filter: pb.filter('live_round_id = {:id}', { id: liveRoundId }) },
+    ),
+    pb.collection('live_rounds').subscribe(liveRoundId, (e) =>
+      handlers.onRoundChange({ action: e.action, row: toRoundRow(e.record) }),
+    ),
+  ]).catch((error) => {
+    console.error('Live-Echtzeitverbindung fehlgeschlagen', error)
+    return [] as Array<() => Promise<void>>
+  })
   return () => {
-    supabase.removeChannel(channel)
+    unsubscribes.then((fns) => fns.forEach((fn) => fn()))
   }
 }

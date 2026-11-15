@@ -6,7 +6,9 @@ const KEYS = {
   rounds: 'stableford:rounds',
   activeRoundId: 'stableford:activeRoundId',
   lang: 'stableford:lang',
-  coursesSyncedOnce: 'stableford:coursesSyncedOnce',
+  // Eigener Schlüssel pro Backend: nach dem Wechsel von Supabase zu PocketBase muss jedes
+  // Gerät seine lokalen Plätze einmal hochladen, statt sie durch ein leeres Remote zu löschen.
+  coursesSyncedOnce: 'stableford:coursesSyncedOnce:pocketbase',
 } as const
 
 function load<T>(key: string, fallback: T): T {
@@ -53,7 +55,7 @@ export function deleteCourse(id: string): void {
   saveCourses(getCourses().filter((c) => c.id !== id))
 }
 
-// Markiert, ob dieses Gerät schon mindestens einmal erfolgreich mit Supabase
+// Markiert, ob dieses Gerät schon mindestens einmal erfolgreich mit dem Server
 // synchronisiert hat — verhindert, dass ein Erstabgleich (leeres Remote)
 // bereits vorhandene lokale Plätze überschreibt (siehe CoursesContext).
 export function getCoursesSyncedOnce(): boolean {

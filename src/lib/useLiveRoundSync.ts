@@ -12,7 +12,7 @@ interface SlotInfo {
 /**
  * Wrappt onLocalUpdate für Live-Runden: wendet jede Änderung sofort lokal an
  * (unverändertes bestehendes Verhalten), pusht aber nur echte Score-/PickedUp-
- * Änderungen des eigenen Spielers gedämpft an Supabase — reine currentHole-
+ * Änderungen des eigenen Spielers gedämpft an den Server — reine currentHole-
  * Navigation bleibt rein lokal. Eingehende Realtime-Events für fremde Slots
  * werden gemerged; Echos des eigenen Slots werden ignoriert (das Gerät bleibt
  * für seinen eigenen Slot autoritativ).
@@ -90,11 +90,10 @@ export function useLiveRoundSync(round: Round, onLocalUpdate: (round: Round) => 
     init().catch((error) => console.error('Live-Runde konnte nicht initial geladen werden', error))
 
     const unsubscribe = subscribeLiveRound(liveRoundId, {
-      onScoreChange: (payload) => {
+      onScoreChange: (event) => {
         const info = slotInfoRef.current
         if (!info) return
-        // Scores werden nie gelöscht (nur per Round-Cascade), daher ist `new` immer die volle Zeile.
-        mergeScores([payload.new as LiveRoundScoreRow], info, true)
+        mergeScores([event.row], info, true)
       },
       onPlayerChange: () => {},
       onRoundChange: () => {},

@@ -11,7 +11,7 @@
     "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.2",
+    "pocketbase": "^0.29.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

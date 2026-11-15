@@ -8,7 +8,7 @@ import {
   setCoursesSyncedOnce,
   upsertCourse,
 } from '../storage'
-import { ensureAuth } from './supabase'
+import { ensureAuth } from './pocketbase'
 import { fetchCourses, pushCourseDelete, pushCourseUpsert, subscribeToCourseChanges } from './courseSync'
 
 interface CoursesContextValue {
@@ -40,7 +40,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     // Erster Abgleich auf einem Gerät: lokale Plätze, die noch nie synchronisiert
     // wurden (z.B. von vor Einführung der Synchronisierung), dürfen nicht durch
     // ein leeres oder unvollständiges Remote überschrieben werden — sie werden
-    // stattdessen einmalig zu Supabase hochgeladen und mit dem Remote-Stand vereint.
+    // stattdessen einmalig zum Server hochgeladen und mit dem Remote-Stand vereint.
     async function initialSync() {
       const remote = await fetchCourses()
       if (cancelled) return
