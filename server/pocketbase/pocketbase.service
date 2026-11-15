@@ -1,0 +1,29 @@
+[Unit]
+Description=PocketBase (StablefordCalc)
+After=network.target
+
+[Service]
+User=pocketbase
+Group=pocketbase
+WorkingDirectory=/opt/pocketbase
+ExecStart=/opt/pocketbase/bin/pocketbase serve \
+  --http=127.0.0.1:8090 \
+  --dir=/opt/pocketbase/pb_data \
+  --migrationsDir=/opt/pocketbase/pb_migrations \
+  --origins=https://mrchrisgau.github.io \
+  --automigrate=false
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=4096
+
+# Roon und UniFi laufen auf demselben Rechner: Ressourcen deckeln, Rechte minimieren.
+MemoryMax=512M
+Nice=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/pocketbase/pb_data
+
+[Install]
+WantedBy=multi-user.target
